@@ -1,0 +1,1094 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Modern Goals App</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    
+    <!-- HTML2PDF Library for PDF Generation -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        
+        /* Custom Scrollbar */
+        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: rgba(255,255,255,0.05); }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 10px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.3); }
+
+        /* Animations */
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-slide-up { animation: slideUp 0.3s ease-out forwards; }
+        
+        .task-enter { animation: slideUp 0.3s ease-out forwards; }
+        
+        /* Checkbox Animation */
+        .check-btn { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+        .check-btn:active { transform: scale(0.9); }
+
+        /* Remove default select arrow for cleaner look */
+        select {
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            appearance: none;
+        }
+        
+        /* Time Input Styling */
+        input[type="time"]::-webkit-calendar-picker-indicator {
+            filter: invert(1);
+            cursor: pointer;
+            opacity: 0.6;
+        }
+        input[type="time"]::-webkit-calendar-picker-indicator:hover {
+            opacity: 1;
+        }
+
+        /* Number Input Styling (Hide Spinners) */
+        input[type=number]::-webkit-inner-spin-button, 
+        input[type=number]::-webkit-outer-spin-button { 
+            -webkit-appearance: none; 
+            margin: 0; 
+        }
+
+        /* Modal Animation */
+        .modal-active {
+            opacity: 1 !important;
+            pointer-events: auto !important;
+        }
+        .modal-active .modal-content {
+            transform: scale(1) !important;
+        }
+        
+        .hidden-view {
+            display: none !important;
+        }
+    </style>
+</head>
+<body class="min-h-screen w-full relative bg-gray-900 text-white overflow-hidden flex items-center justify-center p-4 sm:p-6">
+
+    <!-- Background -->
+    <div class="absolute inset-0 z-0">
+        <img src="https://images.unsplash.com/photo-1483794344563-d27a8d18016e?q=80&w=2070&auto=format&fit=crop" alt="Background" class="w-full h-full object-cover opacity-60">
+        <div class="absolute inset-0 bg-gradient-to-br from-indigo-900/80 via-purple-900/60 to-black/70 backdrop-blur-sm"></div>
+    </div>
+
+    <!-- Motivational Quote Overlay -->
+    <div id="quoteOverlay" class="fixed inset-0 z-50 flex items-center justify-center pointer-events-none opacity-0 transition-opacity duration-500 ease-out">
+        <div class="absolute inset-0 bg-black/70 backdrop-blur-sm"></div>
+        
+        <div id="quoteContent" class="modal-content relative bg-gray-900/95 border border-white/10 p-8 rounded-3xl transform scale-90 transition-transform duration-500 shadow-2xl mx-4 max-w-sm w-full text-center overflow-hidden">
+            <div class="absolute -top-10 -left-10 w-32 h-32 bg-indigo-500/20 rounded-full blur-3xl pointer-events-none"></div>
+            <div class="absolute -bottom-10 -right-10 w-32 h-32 bg-pink-500/20 rounded-full blur-3xl pointer-events-none"></div>
+            
+            <div class="relative z-10 flex flex-col items-center">
+                <div class="mb-6 p-3 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl shadow-lg shadow-indigo-500/20 animate-pulse">
+                     <i data-lucide="sparkles" class="w-8 h-8 text-white"></i>
+                </div>
+                
+                <h2 class="text-2xl font-bold text-white mb-1 tracking-tight">Goal Crushed!</h2>
+                <p class="text-sm text-gray-400 mb-8">You are making progress.</p>
+                
+                <div class="mb-8 relative w-full">
+                    <i data-lucide="quote" class="w-6 h-6 text-indigo-500/30 absolute -top-4 left-0 transform -scale-x-100"></i>
+                    <p id="quoteText" class="text-lg text-indigo-50 italic font-light px-4 relative z-10 leading-relaxed">
+                        Success is not final, failure is not fatal: it is the courage to continue that counts.
+                    </p>
+                    <i data-lucide="quote" class="w-6 h-6 text-indigo-500/30 absolute -bottom-4 right-0"></i>
+                </div>
+                
+                <button onclick="closeQuote()" class="px-8 py-2.5 bg-white text-gray-900 hover:bg-gray-200 font-semibold rounded-xl transition-all transform hover:scale-105 active:scale-95 shadow-lg">
+                    Keep Going
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Card -->
+    <div class="relative z-10 w-full max-w-md md:max-w-2xl lg:max-w-3xl bg-white/10 backdrop-blur-xl border border-white/20 rounded-3xl shadow-2xl overflow-hidden flex flex-col h-[90vh] md:h-[85vh]">
+        
+        <!-- Header (Common) -->
+        <div class="p-6 md:p-8 pb-4 border-b border-white/10 bg-gradient-to-b from-white/5 to-transparent shrink-0">
+            <div class="flex justify-between items-center mb-6">
+                <div class="flex items-center space-x-3">
+                    <div id="appIcon" class="p-2.5 bg-indigo-500/20 rounded-xl border border-indigo-500/30 shadow-inner shadow-indigo-500/10 transition-colors duration-300">
+                        <i data-lucide="trophy" class="w-6 h-6 text-indigo-300"></i>
+                    </div>
+                    <div>
+                        <!-- Editable Dynamic Greeting -->
+                        <div class="text-xs font-semibold text-indigo-300 uppercase tracking-widest mb-0.5 flex items-center gap-1">
+                            <span id="timeGreeting">Hello</span>,
+                            <span id="userNameDisplay" onclick="editName()" class="cursor-pointer border-b border-dashed border-indigo-300/40 hover:text-white hover:border-white transition-all" title="Click to edit name">User</span>
+                            <input type="text" id="userNameInput" class="hidden bg-transparent border-b border-indigo-300 text-indigo-300 w-24 focus:outline-none focus:border-white p-0 m-0 uppercase text-xs font-semibold tracking-widest" onblur="saveName()" onkeydown="handleNameKey(event)">
+                        </div>
+                        <h1 id="pageTitle" class="text-xl md:text-2xl font-bold tracking-wide text-white">Daily Goals</h1>
+                    </div>
+                </div>
+                
+                <div class="flex gap-2">
+                     <!-- Report Toggle Button -->
+                    <button id="reportBtn" onclick="toggleView()" class="p-2 rounded-full transition-colors text-gray-400 hover:text-white hover:bg-white/10" title="Insights">
+                        <i data-lucide="bar-chart-2" class="w-5 h-5"></i>
+                    </button>
+                    
+                    <button id="notifBtn" class="p-2 rounded-full transition-colors text-gray-400 hover:text-white hover:bg-white/10" title="Enable Notifications">
+                        <i data-lucide="bell" class="w-5 h-5"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Date Navigation (Only visible in Daily View) -->
+            <div id="dailyHeaderContent">
+                <div class="flex flex-col space-y-4 md:flex-row md:space-y-0 md:space-x-4 md:items-center">
+                    <div class="flex items-center justify-between bg-black/20 p-1 rounded-xl flex-1">
+                        <button onclick="changeDate(-1)" class="p-2 hover:bg-white/10 rounded-lg transition-colors">
+                            <i data-lucide="chevron-left" class="w-5 h-5 text-gray-300"></i>
+                        </button>
+                        
+                        <div onclick="openCalendar()" class="text-center relative group cursor-pointer px-4 py-1 rounded-lg hover:bg-white/5 transition-colors flex-1">
+                            <input type="date" id="datePicker" class="absolute bottom-0 left-1/2 opacity-0 pointer-events-none w-0 h-0" tabindex="-1">
+                            <div class="flex items-center justify-center gap-2 mb-0.5">
+                                <span id="dateLabel" class="text-xs font-semibold text-indigo-300 uppercase tracking-wider">Today</span>
+                                <i data-lucide="calendar" class="w-3 h-3 text-indigo-300/50"></i>
+                            </div>
+                            <div id="dateDisplay" class="text-lg font-medium group-hover:text-indigo-200 transition-colors">--</div>
+                        </div>
+
+                        <button onclick="changeDate(1)" class="p-2 hover:bg-white/10 rounded-lg transition-colors">
+                            <i data-lucide="chevron-right" class="w-5 h-5 text-gray-300"></i>
+                        </button>
+                    </div>
+                    
+                    <button id="todayBtn" onclick="goToToday()" class="text-xs text-center text-indigo-300 hover:text-white transition-colors hidden md:block px-4 py-2 bg-white/5 rounded-lg border border-white/10">Today</button>
+                </div>
+
+                <!-- Progress Bar -->
+                <div class="mt-6">
+                    <div class="flex justify-between text-xs text-gray-400 mb-2">
+                        <span>Progress</span>
+                        <span id="progressPercent">0%</span>
+                    </div>
+                    <div class="h-2 bg-gray-700/50 rounded-full overflow-hidden">
+                        <div id="progressBar" class="h-full bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 transition-all duration-700 ease-out" style="width: 0%"></div>
+                    </div>
+                    <p id="progressText" class="text-xs text-gray-400 mt-2 text-center">0 of 0 goals completed</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- VIEW: Daily Task List -->
+        <div id="dailyView" class="flex-1 flex flex-col overflow-hidden">
+            <div id="taskList" class="flex-1 overflow-y-auto p-6 md:p-8 space-y-3 custom-scrollbar">
+                <!-- Tasks injected here -->
+            </div>
+
+            <!-- Input Area -->
+            <div class="p-4 md:p-6 bg-gradient-to-t from-black/40 to-transparent border-t border-white/10 shrink-0">
+                <form id="addTaskForm" class="flex gap-2 md:gap-4">
+                    <div class="relative flex-1">
+                        <input type="text" id="taskInput" placeholder="What's your goal?" class="w-full bg-white/10 text-white placeholder-gray-400 border border-white/10 rounded-xl py-3.5 pl-4 pr-2 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:bg-white/15 transition-all">
+                    </div>
+                    
+                    <div class="relative w-12 md:w-24">
+                        <input type="time" id="timeInput" class="h-full w-full bg-white/10 text-white border border-white/10 rounded-xl px-1 md:px-3 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:bg-white/15 transition-all cursor-pointer text-center text-sm" title="Set Reminder Time">
+                    </div>
+
+                    <button type="button" id="priorityBtn" class="flex items-center gap-2 px-3 md:px-4 rounded-xl border transition-all duration-300 hover:scale-105 active:scale-95 min-w-[80px] justify-center bg-blue-500/10 border-blue-500/20 text-blue-300">
+                        <i data-lucide="flag" class="w-4 h-4"></i>
+                        <span id="priorityLabel" class="text-sm font-semibold">Low</span>
+                    </button>
+
+                    <button type="submit" id="addBtn" class="p-3.5 bg-indigo-500 hover:bg-indigo-400 text-white rounded-xl transition-colors shadow-lg shadow-indigo-500/20 opacity-50 cursor-not-allowed flex-shrink-0" disabled>
+                        <i data-lucide="plus" class="w-5 h-5"></i>
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <!-- VIEW: Insights (Monthly / Daily Reports) -->
+        <div id="monthlyView" class="hidden-view flex-1 flex flex-col overflow-hidden p-6 md:p-8">
+            <!-- Top Controls Row -->
+            <div class="flex flex-wrap justify-between items-center mb-6 shrink-0 gap-4">
+                <!-- Type Toggle -->
+                <div class="bg-black/20 p-1 rounded-xl flex gap-1">
+                    <button onclick="setInsightType('monthly')" id="btnMonthly" class="px-4 py-2 rounded-lg text-sm font-medium transition-all bg-white/10 text-white shadow">Monthly</button>
+                    <button onclick="setInsightType('daily')" id="btnDaily" class="px-4 py-2 rounded-lg text-sm font-medium transition-all text-gray-400 hover:text-white">Daily</button>
+                </div>
+
+                <div class="flex items-center gap-2">
+                    <!-- List/Calendar Toggle (Only for Daily) -->
+                    <div id="dailyViewToggles" class="hidden bg-black/20 p-1 rounded-xl flex gap-1">
+                        <button onclick="setDailyMode('list')" id="btnListMode" class="p-2 rounded-lg transition-all bg-white/10 text-white shadow" title="List View">
+                            <i data-lucide="list" class="w-4 h-4"></i>
+                        </button>
+                        <button onclick="setDailyMode('calendar')" id="btnCalendarMode" class="p-2 rounded-lg transition-all text-gray-400 hover:text-white" title="Calendar View">
+                            <i data-lucide="calendar" class="w-4 h-4"></i>
+                        </button>
+                    </div>
+
+                    <!-- Download PDF Button -->
+                    <button onclick="downloadPDF()" class="flex items-center gap-2 px-3 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-sm font-medium transition-colors shadow-lg shadow-indigo-600/20">
+                        <i data-lucide="download" class="w-4 h-4"></i>
+                        <span class="hidden sm:inline">Download PDF</span>
+                    </button>
+                </div>
+            </div>
+
+            <div id="reportContainer" class="flex-1 overflow-y-auto custom-scrollbar space-y-4">
+                <!-- Cards injected here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Container -->
+    <div id="toastContainer" class="fixed bottom-6 right-6 z-50 flex flex-col gap-2 pointer-events-none"></div>
+
+    <script>
+        // --- State ---
+        let tasks = JSON.parse(localStorage.getItem('modern-todo-tasks')) || [];
+        let userName = localStorage.getItem('modern-todo-username') || 'Sumit Kumar';
+        let currentDate = new Date();
+        let notifPermission = typeof Notification !== 'undefined' ? Notification.permission : 'default';
+        let expandedTimerId = null;
+        let currentPriority = 'low';
+        let isDailyView = true;
+        let insightType = 'monthly'; 
+        let dailyViewMode = 'list'; 
+        let calendarViewDate = new Date(); 
+
+        const priorities = ['low', 'medium', 'high'];
+        const motivationalQuotes = [
+            "The only way to do great work is to love what you do.",
+            "Believe you can and you're halfway there.",
+            "Your limitation—it's only your imagination.",
+            "Push yourself, because no one else is going to do it for you.",
+            "Great things never come from comfort zones.",
+            "Success doesn’t just find you. You have to go out and get it.",
+            "The harder you work for something, the greater you'll feel when you achieve it.",
+            "Don't stop when you're tired. Stop when you're done.",
+            "Little things make big days.",
+            "Dream bigger. Do bigger."
+        ];
+
+        // --- Constants ---
+        const DOM = {
+            dailyView: document.getElementById('dailyView'),
+            monthlyView: document.getElementById('monthlyView'),
+            dailyHeaderContent: document.getElementById('dailyHeaderContent'),
+            pageTitle: document.getElementById('pageTitle'),
+            appIcon: document.getElementById('appIcon'),
+            reportBtn: document.getElementById('reportBtn'),
+            reportContainer: document.getElementById('reportContainer'),
+            
+            btnMonthly: document.getElementById('btnMonthly'),
+            btnDaily: document.getElementById('btnDaily'),
+            dailyViewToggles: document.getElementById('dailyViewToggles'),
+            btnListMode: document.getElementById('btnListMode'),
+            btnCalendarMode: document.getElementById('btnCalendarMode'),
+            
+            dateDisplay: document.getElementById('dateDisplay'),
+            dateLabel: document.getElementById('dateLabel'),
+            datePicker: document.getElementById('datePicker'), 
+            todayBtn: document.getElementById('todayBtn'),
+            progressBar: document.getElementById('progressBar'),
+            progressPercent: document.getElementById('progressPercent'),
+            progressText: document.getElementById('progressText'),
+            taskList: document.getElementById('taskList'),
+            taskInput: document.getElementById('taskInput'),
+            
+            priorityBtn: document.getElementById('priorityBtn'),
+            priorityLabel: document.getElementById('priorityLabel'),
+            
+            timeInput: document.getElementById('timeInput'),
+            addBtn: document.getElementById('addBtn'),
+            form: document.getElementById('addTaskForm'),
+            toastContainer: document.getElementById('toastContainer'),
+            notifBtn: document.getElementById('notifBtn'),
+            
+            timeGreeting: document.getElementById('timeGreeting'),
+            userNameDisplay: document.getElementById('userNameDisplay'),
+            userNameInput: document.getElementById('userNameInput'),
+            
+            quoteOverlay: document.getElementById('quoteOverlay'),
+            quoteText: document.getElementById('quoteText')
+        };
+
+        const PRIORITY_CONFIG = {
+            high: { label: 'High', color: 'text-red-300 bg-red-500/10 border-red-500/20', iconColor: 'text-red-400' },
+            medium: { label: 'Med', color: 'text-amber-300 bg-amber-500/10 border-amber-500/20', iconColor: 'text-amber-400' },
+            low: { label: 'Low', color: 'text-blue-300 bg-blue-500/10 border-blue-500/20', iconColor: 'text-blue-400' }
+        };
+
+        // --- PDF Generation ---
+        window.downloadPDF = () => {
+            const element = document.createElement('div');
+            element.style.width = '750px'; 
+            element.style.padding = '40px';
+            element.style.fontFamily = "'Inter', sans-serif";
+            element.style.backgroundColor = '#ffffff';
+            element.style.color = '#1f2937';
+
+            const title = insightType === 'monthly' ? 'Monthly Insights Report' : 'Daily Performance Report';
+            const dateStr = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+            
+            let rowsHtml = '';
+            
+            // Re-use logic to fetch data for PDF
+            if (insightType === 'monthly') {
+                const months = {};
+                tasks.forEach(task => {
+                    const d = new Date(task.date);
+                    const k = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+                    if (!months[k]) months[k] = { total: 0, completed: 0, date: d };
+                    months[k].total++;
+                    if (task.completed) months[k].completed++;
+                });
+                const sortedKeys = Object.keys(months).sort().reverse();
+                sortedKeys.forEach(key => {
+                    const data = months[key];
+                    const label = new Intl.DateTimeFormat('en-US', { month: 'long', year: 'numeric' }).format(data.date);
+                    rowsHtml += createPdfRow(label, data.completed, data.total);
+                });
+            } else {
+                const days = getAggregatedDays();
+                const sortedKeys = Object.keys(days).sort().reverse();
+                sortedKeys.forEach(key => {
+                    const data = days[key];
+                    const label = new Intl.DateTimeFormat('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' }).format(data.date);
+                    rowsHtml += createPdfRow(label, data.completed, data.total);
+                });
+            }
+
+            if (!rowsHtml) rowsHtml = '<div style="padding: 20px; text-align: center; color: #6b7280;">No data available for this report.</div>';
+
+            element.innerHTML = `
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; border-bottom: 2px solid #4f46e5; padding-bottom: 20px;">
+                    <div>
+                        <h1 style="font-size: 28px; font-weight: 700; color: #111827; margin: 0;">${title}</h1>
+                        <p style="color: #6b7280; margin: 5px 0 0 0; font-size: 14px;">Prepared for <span style="color: #4f46e5; font-weight: 600;">${userName}</span></p>
+                    </div>
+                    <div style="text-align: right;">
+                        <p style="color: #6b7280; font-size: 12px; margin: 0;">Generated on</p>
+                        <p style="color: #111827; font-weight: 500; font-size: 14px; margin: 0;">${dateStr}</p>
+                    </div>
+                </div>
+                <div style="background: #f9fafb; border-radius: 8px; padding: 10px;">
+                    ${rowsHtml}
+                </div>
+                <div style="margin-top: 30px; text-align: center; color: #9ca3af; font-size: 12px;">
+                    Generated by Modern Goals App
+                </div>
+            `;
+
+            const opt = {
+                margin: 10,
+                filename: `goals-report-${insightType}.pdf`,
+                image: { type: 'jpeg', quality: 0.98 },
+                html2canvas: { scale: 2, useCORS: true },
+                jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+            };
+
+            // Show loading toast
+            addToast('Generating PDF...', 'info');
+            
+            html2pdf().set(opt).from(element).save().then(() => {
+                addToast('PDF Downloaded Successfully!');
+            }).catch(err => {
+                console.error(err);
+                addToast('Failed to generate PDF.');
+            });
+        };
+
+        const createPdfRow = (label, completed, total) => {
+            const percent = Math.round((completed / total) * 100) || 0;
+            let grade = 'D', color = '#ef4444', badge = '⚠️';
+            
+            if (percent === 100) { grade = 'S'; color = '#eab308'; badge = '🏆'; }
+            else if (percent >= 80) { grade = 'A'; color = '#10b981'; badge = '⭐'; }
+            else if (percent >= 60) { grade = 'B'; color = '#3b82f6'; badge = '📈'; }
+            else if (percent >= 40) { grade = 'C'; color = '#a855f7'; badge = '🎯'; }
+
+            return `
+                <div style="display: flex; justify-content: space-between; align-items: center; background: #ffffff; border: 1px solid #e5e7eb; border-radius: 8px; padding: 15px; margin-bottom: 10px;">
+                    <div style="flex: 1;">
+                        <h3 style="font-size: 16px; font-weight: 600; color: #1f2937; margin: 0 0 5px 0;">${label}</h3>
+                        <div style="width: 100%; background: #f3f4f6; height: 6px; border-radius: 99px; overflow: hidden;">
+                            <div style="width: ${percent}%; background: ${color}; height: 100%;"></div>
+                        </div>
+                    </div>
+                    <div style="text-align: right; margin-left: 20px; min-width: 100px;">
+                        <div style="font-size: 20px; font-weight: 700; color: ${color};">${percent}% <span style="font-size: 16px;">${badge}</span></div>
+                        <div style="font-size: 12px; color: #6b7280;">${completed}/${total} Done</div>
+                    </div>
+                </div>
+            `;
+        };
+
+        // --- View Switching ---
+        window.toggleView = () => {
+            isDailyView = !isDailyView;
+            
+            if (isDailyView) {
+                // Show Daily
+                DOM.dailyView.classList.remove('hidden-view');
+                DOM.monthlyView.classList.add('hidden-view');
+                DOM.dailyHeaderContent.classList.remove('hidden-view');
+                DOM.pageTitle.textContent = "Daily Goals";
+                DOM.reportBtn.innerHTML = '<i data-lucide="bar-chart-2" class="w-5 h-5"></i>';
+                DOM.appIcon.querySelector('svg').outerHTML = '<i data-lucide="trophy" class="w-6 h-6 text-indigo-300"></i>';
+                lucide.createIcons();
+                updateUI();
+            } else {
+                // Show Insights
+                DOM.dailyView.classList.add('hidden-view');
+                DOM.monthlyView.classList.remove('hidden-view');
+                DOM.dailyHeaderContent.classList.add('hidden-view');
+                DOM.pageTitle.textContent = "Insights";
+                DOM.reportBtn.innerHTML = '<i data-lucide="arrow-left" class="w-5 h-5"></i>'; 
+                DOM.appIcon.querySelector('svg').outerHTML = '<i data-lucide="pie-chart" class="w-6 h-6 text-pink-300"></i>';
+                updateInsightsUI();
+                lucide.createIcons();
+            }
+        };
+
+        window.setInsightType = (type) => {
+            insightType = type;
+            updateInsightsUI();
+        };
+
+        window.setDailyMode = (mode) => {
+            dailyViewMode = mode;
+            updateInsightsUI();
+        };
+
+        const updateInsightsUI = () => {
+            // Update Main Toggle UI
+            if(insightType === 'monthly') {
+                DOM.btnMonthly.className = "px-4 py-2 rounded-lg text-sm font-medium transition-all bg-white/10 text-white shadow";
+                DOM.btnDaily.className = "px-4 py-2 rounded-lg text-sm font-medium transition-all text-gray-400 hover:text-white";
+                DOM.dailyViewToggles.classList.add('hidden');
+                renderMonthlyReport();
+            } else {
+                DOM.btnMonthly.className = "px-4 py-2 rounded-lg text-sm font-medium transition-all text-gray-400 hover:text-white";
+                DOM.btnDaily.className = "px-4 py-2 rounded-lg text-sm font-medium transition-all bg-white/10 text-white shadow";
+                DOM.dailyViewToggles.classList.remove('hidden');
+                DOM.dailyViewToggles.classList.add('flex');
+                
+                // Update Sub Toggle UI
+                if(dailyViewMode === 'list') {
+                    DOM.btnListMode.className = "p-2 rounded-lg transition-all bg-white/10 text-white shadow";
+                    DOM.btnCalendarMode.className = "p-2 rounded-lg transition-all text-gray-400 hover:text-white";
+                    renderDailyReportList();
+                } else {
+                    DOM.btnListMode.className = "p-2 rounded-lg transition-all text-gray-400 hover:text-white";
+                    DOM.btnCalendarMode.className = "p-2 rounded-lg transition-all bg-white/10 text-white shadow";
+                    renderDailyReportCalendar();
+                }
+            }
+            lucide.createIcons();
+        };
+
+        // --- Monthly Report Logic ---
+        const renderMonthlyReport = () => {
+            DOM.reportContainer.innerHTML = '';
+            const months = {};
+            tasks.forEach(task => {
+                const date = new Date(task.date);
+                const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+                if (!months[key]) months[key] = { total: 0, completed: 0, date: date };
+                months[key].total++;
+                if (task.completed) months[key].completed++;
+            });
+
+            const sortedKeys = Object.keys(months).sort().reverse();
+            if (sortedKeys.length === 0) return renderEmptyState();
+
+            sortedKeys.forEach(key => {
+                const data = months[key];
+                const label = new Intl.DateTimeFormat('en-US', { month: 'long', year: 'numeric' }).format(data.date);
+                renderReportCard(label, data.completed, data.total);
+            });
+        };
+
+        // --- Daily Report: List View ---
+        const renderDailyReportList = () => {
+            DOM.reportContainer.innerHTML = '';
+            const days = getAggregatedDays();
+            const sortedKeys = Object.keys(days).sort().reverse();
+
+            if (sortedKeys.length === 0) return renderEmptyState();
+
+            sortedKeys.forEach(key => {
+                const data = days[key];
+                const label = new Intl.DateTimeFormat('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' }).format(data.date);
+                renderReportCard(label, data.completed, data.total);
+            });
+        };
+
+        // --- Daily Report: Calendar View Logic ---
+        window.changeCalendarMonth = (offset) => {
+            calendarViewDate.setMonth(calendarViewDate.getMonth() + offset);
+            renderDailyReportCalendar(); // Re-render
+            lucide.createIcons();
+        };
+
+        const renderDailyReportCalendar = () => {
+            DOM.reportContainer.innerHTML = '';
+            const year = calendarViewDate.getFullYear();
+            const month = calendarViewDate.getMonth();
+            
+            // Header
+            const header = document.createElement('div');
+            header.className = "flex justify-between items-center mb-4 bg-white/5 p-3 rounded-xl";
+            const monthName = new Intl.DateTimeFormat('en-US', { month: 'long', year: 'numeric' }).format(calendarViewDate);
+            header.innerHTML = `
+                <button onclick="changeCalendarMonth(-1)" class="p-1 hover:bg-white/10 rounded-lg transition-colors"><i data-lucide="chevron-left" class="w-5 h-5 text-gray-300"></i></button>
+                <span class="text-lg font-bold text-white">${monthName}</span>
+                <button onclick="changeCalendarMonth(1)" class="p-1 hover:bg-white/10 rounded-lg transition-colors"><i data-lucide="chevron-right" class="w-5 h-5 text-gray-300"></i></button>
+            `;
+            DOM.reportContainer.appendChild(header);
+
+            // Grid Container
+            const grid = document.createElement('div');
+            grid.className = "grid grid-cols-7 gap-2";
+            
+            // Day Headers
+            ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].forEach(d => {
+                const el = document.createElement('div');
+                el.className = "text-center text-xs text-gray-500 font-medium py-2";
+                el.textContent = d;
+                grid.appendChild(el);
+            });
+
+            const daysData = getAggregatedDays();
+            const firstDay = new Date(year, month, 1);
+            const lastDay = new Date(year, month + 1, 0);
+            const daysInMonth = lastDay.getDate();
+            const startDayIdx = firstDay.getDay(); // 0 = Sunday
+
+            // Empty slots
+            for(let i=0; i<startDayIdx; i++) {
+                const el = document.createElement('div');
+                grid.appendChild(el);
+            }
+
+            // Calendar Days
+            for(let day=1; day<=daysInMonth; day++) {
+                const currentDayStr = `${year}-${String(month+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+                const data = daysData[currentDayStr];
+                
+                const cell = document.createElement('div');
+                cell.className = "aspect-square rounded-xl border border-white/5 flex flex-col items-center justify-center relative transition-all hover:bg-white/5 cursor-default";
+                
+                // Grade Logic for visuals
+                let bgClass = "bg-white/5";
+                let badge = "";
+                
+                if(data) {
+                    const percent = Math.round((data.completed / data.total) * 100) || 0;
+                    if (percent === 100) { bgClass = "bg-gradient-to-br from-yellow-500/40 to-orange-600/40 border-yellow-500/30"; badge = "🏆"; }
+                    else if (percent >= 80) { bgClass = "bg-gradient-to-br from-green-500/30 to-emerald-600/30 border-green-500/30"; badge = "⭐"; }
+                    else if (percent >= 60) { bgClass = "bg-gradient-to-br from-blue-500/30 to-indigo-600/30 border-blue-500/30"; badge = "📈"; }
+                    else if (percent >= 40) { bgClass = "bg-gradient-to-br from-purple-500/30 to-pink-600/30 border-purple-500/30"; badge = "🎯"; }
+                    else { bgClass = "bg-red-500/20 border-red-500/30"; badge = "⚠️"; }
+                    
+                    // Progress Ring (Simple implementation using conic-gradient)
+                    cell.style.background = `conic-gradient(rgba(255,255,255,0.1) ${percent}%, transparent 0)`;
+                    cell.className += ` ${bgClass}`;
+                }
+
+                cell.innerHTML = `
+                    <span class="text-sm font-medium ${data ? 'text-white' : 'text-gray-500'}">${day}</span>
+                    ${badge ? `<span class="absolute -top-1 -right-1 text-[10px]">${badge}</span>` : ''}
+                    ${data ? `<div class="absolute bottom-1 w-8 h-1 bg-black/30 rounded-full overflow-hidden"><div class="h-full bg-white/50" style="width: ${Math.round((data.completed/data.total)*100)}%"></div></div>` : ''}
+                `;
+                
+                grid.appendChild(cell);
+            }
+
+            DOM.reportContainer.appendChild(grid);
+        };
+
+        // Helper
+        const getAggregatedDays = () => {
+            const days = {};
+            tasks.forEach(task => {
+                const date = new Date(task.date);
+                const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+                if (!days[key]) days[key] = { total: 0, completed: 0, date: date };
+                days[key].total++;
+                if (task.completed) days[key].completed++;
+            });
+            return days;
+        };
+
+        const renderEmptyState = () => {
+            DOM.reportContainer.innerHTML = `
+                <div class="flex flex-col items-center justify-center h-64 text-gray-400 opacity-70">
+                    <i data-lucide="bar-chart-2" class="w-12 h-12 mb-4 text-gray-600"></i>
+                    <p>No activity recorded yet.</p>
+                    <p class="text-sm">Complete tasks to see your stats!</p>
+                </div>`;
+        };
+
+        const renderReportCard = (label, completed, total) => {
+            const percent = Math.round((completed / total) * 100) || 0;
+            let grade, colorClass, icon;
+            if (percent === 100) { grade = 'S'; colorClass = 'from-yellow-400 to-orange-500'; icon = 'trophy'; }
+            else if (percent >= 80) { grade = 'A'; colorClass = 'from-green-400 to-emerald-600'; icon = 'star'; }
+            else if (percent >= 60) { grade = 'B'; colorClass = 'from-blue-400 to-indigo-600'; icon = 'trending-up'; }
+            else if (percent >= 40) { grade = 'C'; colorClass = 'from-purple-400 to-pink-600'; icon = 'target'; }
+            else { grade = 'D'; colorClass = 'from-red-400 to-red-600'; icon = 'alert-circle'; }
+
+            const card = document.createElement('div');
+            card.className = 'bg-white/5 border border-white/10 rounded-2xl p-5 hover:bg-white/10 transition-colors animate-slide-up';
+            
+            card.innerHTML = `
+                <div class="flex justify-between items-start mb-4">
+                    <div>
+                        <h3 class="font-bold text-lg text-white tracking-wide">${label}</h3>
+                        <p class="text-xs text-gray-400 mt-1">${completed} / ${total} Goals Completed</p>
+                    </div>
+                    <div class="w-10 h-10 rounded-xl bg-gradient-to-br ${colorClass} flex items-center justify-center text-white font-bold text-xl shadow-lg transform -rotate-6">
+                        ${grade}
+                    </div>
+                </div>
+                <div class="relative h-3 bg-gray-700/30 rounded-full overflow-hidden mb-3">
+                    <div class="absolute top-0 left-0 h-full bg-gradient-to-r ${colorClass} transition-all duration-1000" style="width: ${percent}%"></div>
+                </div>
+                <div class="flex justify-between items-center text-xs font-medium">
+                    <span class="text-gray-300">Score: <span class="text-white">${percent}%</span></span>
+                    <div class="flex items-center gap-1 text-gray-400">
+                            <i data-lucide="${icon}" class="w-3.5 h-3.5"></i>
+                            <span>${grade === 'S' ? 'Perfect!' : grade === 'A' ? 'Excellent' : grade === 'B' ? 'Good' : grade === 'C' ? 'Fair' : 'Needs Work'}</span>
+                    </div>
+                </div>
+            `;
+            DOM.reportContainer.appendChild(card);
+        };
+
+        // --- Standard UI Updates ---
+        const updateGreeting = () => {
+            const hour = new Date().getHours();
+            let greeting = "Hello";
+            if (hour >= 5 && hour < 12) greeting = "Good Morning";
+            else if (hour >= 12 && hour < 18) greeting = "Good Afternoon";
+            else greeting = "Good Evening";
+            DOM.timeGreeting.textContent = greeting;
+            DOM.userNameDisplay.textContent = userName;
+        };
+
+        window.editName = () => {
+            DOM.userNameDisplay.classList.add('hidden');
+            DOM.userNameInput.classList.remove('hidden');
+            DOM.userNameInput.value = userName;
+            DOM.userNameInput.focus();
+        };
+
+        window.saveName = () => {
+            const newName = DOM.userNameInput.value.trim();
+            if (newName) {
+                userName = newName;
+                localStorage.setItem('modern-todo-username', userName);
+            }
+            DOM.userNameInput.classList.add('hidden');
+            DOM.userNameDisplay.classList.remove('hidden');
+            updateGreeting();
+        };
+
+        window.handleNameKey = (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                DOM.userNameInput.blur();
+            }
+        };
+
+        const showQuote = () => {
+            const randomQuote = motivationalQuotes[Math.floor(Math.random() * motivationalQuotes.length)];
+            DOM.quoteText.textContent = randomQuote;
+            DOM.quoteOverlay.classList.add('modal-active');
+            lucide.createIcons();
+            setTimeout(() => {
+                if(DOM.quoteOverlay.classList.contains('modal-active')) closeQuote();
+            }, 4000);
+        };
+
+        window.closeQuote = () => {
+            DOM.quoteOverlay.classList.remove('modal-active');
+        };
+
+        const updatePriorityBtnUI = () => {
+            const config = PRIORITY_CONFIG[currentPriority];
+            DOM.priorityBtn.className = `flex items-center gap-2 px-3 md:px-4 rounded-xl border transition-all duration-300 hover:scale-105 active:scale-95 min-w-[80px] justify-center ${config.color}`;
+            DOM.priorityLabel.textContent = config.label;
+            const icon = DOM.priorityBtn.querySelector('svg');
+            if(icon) icon.setAttribute('class', `w-4 h-4 ${config.iconColor}`);
+        };
+
+        DOM.priorityBtn.addEventListener('click', () => {
+            const currentIndex = priorities.indexOf(currentPriority);
+            currentPriority = priorities[(currentIndex + 1) % priorities.length];
+            updatePriorityBtnUI();
+        });
+
+        const triggerConfetti = () => {
+            const colors = ['#FF6B6B', '#4ECDC4', '#FFE66D', '#FF9F43', '#6C5CE7'];
+            for (let i = 0; i < 150; i++) {
+                const particle = document.createElement('div');
+                particle.style.position = 'fixed';
+                particle.style.left = '50%';
+                particle.style.top = '50%';
+                particle.style.width = '10px';
+                particle.style.height = '10px';
+                particle.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+                particle.style.borderRadius = '50%';
+                particle.style.pointerEvents = 'none';
+                particle.style.zIndex = '9999';
+                particle.animate([
+                    { transform: 'translate(0, 0) scale(1)', opacity: 1 },
+                    { transform: `translate(${Math.cos(Math.random() * 6.28) * 400}px, ${Math.sin(Math.random() * 6.28) * 400}px) scale(0)`, opacity: 0 }
+                ], { duration: 1000 + Math.random() * 800, easing: 'cubic-bezier(0, .9, .57, 1)' }).onfinish = () => particle.remove();
+                document.body.appendChild(particle);
+            }
+        };
+
+        const formatDate = (date) => new Intl.DateTimeFormat('en-US', { weekday: 'long', month: 'long', day: 'numeric' }).format(date);
+        const formatTimeDisplay = (timeStr) => {
+            if (!timeStr) return '';
+            const [hours, minutes] = timeStr.split(':');
+            const h = parseInt(hours, 10);
+            const ampm = h >= 12 ? 'PM' : 'AM';
+            return `${h % 12 || 12}:${minutes} ${ampm}`;
+        };
+        const isSameDay = (d1, d2) => d1.getFullYear() === d2.getFullYear() && d1.getMonth() === d2.getMonth() && d1.getDate() === d2.getDate();
+        const getRelativeLabel = (date) => {
+            const today = new Date();
+            const yesterday = new Date(today); yesterday.setDate(today.getDate() - 1);
+            const tomorrow = new Date(today); tomorrow.setDate(today.getDate() + 1);
+            if (isSameDay(date, today)) return 'Today';
+            if (isSameDay(date, yesterday)) return 'Yesterday';
+            if (isSameDay(date, tomorrow)) return 'Tomorrow';
+            return '';
+        };
+        const pad = (n) => n.toString().padStart(2, '0');
+
+        const saveTasks = () => localStorage.setItem('modern-todo-tasks', JSON.stringify(tasks));
+
+        const updateUI = () => {
+            if (!isDailyView) return;
+            
+            updateGreeting(); 
+            DOM.dateDisplay.textContent = formatDate(currentDate);
+            const label = getRelativeLabel(currentDate);
+            DOM.dateLabel.textContent = label;
+            DOM.todayBtn.classList.toggle('hidden', label === 'Today');
+            
+            if (window.innerWidth >= 768) {
+                 DOM.todayBtn.classList.toggle('hidden', isSameDay(currentDate, new Date()));
+                 DOM.todayBtn.classList.toggle('md:block', !isSameDay(currentDate, new Date()));
+            }
+            
+            const year = currentDate.getFullYear();
+            const month = pad(currentDate.getMonth() + 1);
+            const day = pad(currentDate.getDate());
+            DOM.datePicker.value = `${year}-${month}-${day}`;
+            
+            const currentTasks = tasks.filter(t => isSameDay(new Date(t.date), currentDate));
+            const priorityOrder = { high: 3, medium: 2, low: 1 };
+            currentTasks.sort((a, b) => {
+                if (a.completed !== b.completed) return a.completed ? 1 : -1;
+                const pA = priorityOrder[a.priority || 'low'];
+                const pB = priorityOrder[b.priority || 'low'];
+                return pB - pA || new Date(a.createdAt) - new Date(b.createdAt);
+            });
+            
+            const total = currentTasks.length;
+            const completed = currentTasks.filter(t => t.completed).length;
+            const progress = total === 0 ? 0 : Math.round((completed / total) * 100);
+            DOM.progressBar.style.width = `${progress}%`;
+            DOM.progressPercent.textContent = `${progress}%`;
+            DOM.progressText.textContent = `${completed} of ${total} goals completed`;
+
+            DOM.taskList.innerHTML = '';
+            if (currentTasks.length === 0) {
+                DOM.taskList.innerHTML = `
+                    <div class="h-40 flex flex-col items-center justify-center text-gray-400 opacity-70 task-enter">
+                        <div class="bg-white/5 p-4 rounded-full mb-3"><i data-lucide="star" class="w-8 h-8 text-indigo-300"></i></div>
+                        <p>No goals set for this day.</p>
+                        <p class="text-sm">Start by adding one below!</p>
+                    </div>`;
+            } else {
+                currentTasks.forEach(task => renderTask(task));
+            }
+            lucide.createIcons();
+        };
+
+        const renderTask = (task) => {
+            const pConfig = PRIORITY_CONFIG[task.priority || 'low'];
+            const div = document.createElement('div');
+            div.className = `group flex flex-col p-4 rounded-xl border transition-all duration-300 task-enter ${task.completed ? 'bg-indigo-900/20 border-indigo-500/30 opacity-75' : 'bg-white/5 border-white/10 hover:bg-white/10 hover:border-white/20'}`;
+            
+            const mainRow = document.createElement('div');
+            mainRow.className = "flex items-center gap-3 relative";
+            
+            const timeHtml = task.dueTime 
+                ? `<div class="flex items-center gap-1 text-xs text-gray-300 bg-white/10 px-2 py-0.5 rounded border border-white/5"><i data-lucide="clock" class="w-3 h-3"></i>${formatTimeDisplay(task.dueTime)}</div>` : '';
+
+            let timerDisplayHtml = '';
+            let timerActive = false;
+            if (task.timerEnd) {
+                timerActive = true;
+                const remaining = Math.max(0, Math.ceil((task.timerEnd - Date.now()) / 1000));
+                const m = Math.floor(remaining / 60);
+                const s = remaining % 60;
+                timerDisplayHtml = `<span class="text-xs font-mono text-indigo-300 bg-indigo-500/20 px-2 py-0.5 rounded border border-indigo-500/30 animate-pulse">${pad(m)}:${pad(s)}</span>`;
+            } else if (task.timerPaused) {
+                 const remaining = Math.ceil(task.timerPaused / 1000);
+                 const m = Math.floor(remaining / 60);
+                 const s = remaining % 60;
+                 timerDisplayHtml = `<span class="text-xs font-mono text-gray-400 bg-gray-700/50 px-2 py-0.5 rounded border border-gray-600">${pad(m)}:${pad(s)} (Paused)</span>`;
+            }
+
+            mainRow.innerHTML = `
+                <button onclick="toggleTask('${task.id}')" class="check-btn flex-shrink-0 w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all duration-300 ${task.completed ? 'bg-green-500 border-green-500 scale-110' : 'border-gray-400 hover:border-indigo-400'}">
+                    ${task.completed ? '<i data-lucide="check" class="w-3.5 h-3.5 text-white" stroke-width="4"></i>' : ''}
+                </button>
+                
+                <div class="flex-1 min-w-0 cursor-pointer" onclick="toggleTimerPanel('${task.id}')">
+                    <div class="flex items-center gap-2 mb-1 flex-wrap">
+                        <span class="text-xs font-bold px-1.5 py-0.5 rounded border ${pConfig.color}">${pConfig.label}</span>
+                        ${timeHtml}
+                        ${timerDisplayHtml}
+                    </div>
+                    <div class="text-sm font-medium truncate transition-all duration-300 ${task.completed ? 'text-gray-400 line-through' : 'text-gray-100'} md:text-base">${escapeHtml(task.text)}</div>
+                </div>
+
+                <div class="flex items-center gap-1">
+                    <button onclick="toggleTimerPanel('${task.id}')" class="p-2 text-gray-400 hover:text-indigo-300 hover:bg-indigo-500/10 rounded-lg transition-colors" title="Focus Timer">
+                        <i data-lucide="timer" class="w-4 h-4"></i>
+                    </button>
+                    <button onclick="deleteTask('${task.id}')" class="p-2 text-gray-400 hover:text-red-400 hover:bg-red-400/10 rounded-lg transition-colors opacity-0 group-hover:opacity-100">
+                        <i data-lucide="trash-2" class="w-4 h-4"></i>
+                    </button>
+                </div>
+            `;
+            div.appendChild(mainRow);
+
+            if (expandedTimerId === task.id) {
+                const timerPanel = document.createElement('div');
+                timerPanel.className = "mt-3 pt-3 border-t border-white/10 animate-slide-up";
+                
+                const isRunning = !!task.timerEnd;
+                const remainingMs = isRunning ? task.timerEnd - Date.now() : (task.timerPaused || (task.defaultTimerDuration || 0));
+                const remainingSecs = Math.max(0, Math.ceil(remainingMs / 1000));
+                
+                if (isRunning || task.timerPaused) {
+                     const m = Math.floor(remainingSecs / 60);
+                     const s = remainingSecs % 60;
+                     
+                     timerPanel.innerHTML = `
+                        <div class="flex items-center justify-between bg-black/20 rounded-lg p-2">
+                            <div class="text-2xl font-mono font-bold text-white tracking-wider ml-2">
+                                ${pad(m)}:${pad(s)}
+                            </div>
+                            <div class="flex gap-2">
+                                ${isRunning 
+                                    ? `<button onclick="pauseTimer('${task.id}')" class="p-2 bg-yellow-500/20 text-yellow-300 rounded-lg hover:bg-yellow-500/30"><i data-lucide="pause" class="w-4 h-4"></i></button>`
+                                    : `<button onclick="resumeTimer('${task.id}')" class="p-2 bg-green-500/20 text-green-300 rounded-lg hover:bg-green-500/30"><i data-lucide="play" class="w-4 h-4"></i></button>`
+                                }
+                                <button onclick="stopTimer('${task.id}')" class="p-2 bg-red-500/20 text-red-300 rounded-lg hover:bg-red-500/30"><i data-lucide="square" class="w-4 h-4"></i></button>
+                            </div>
+                        </div>
+                     `;
+                } else {
+                    const defMin = Math.floor((task.defaultTimerDuration || 1500000) / 60000); 
+                    const defSec = Math.floor(((task.defaultTimerDuration || 1500000) % 60000) / 1000);
+                    
+                    timerPanel.innerHTML = `
+                        <div class="flex items-center gap-2">
+                            <div class="flex-1 flex items-center bg-white/5 rounded-lg border border-white/10 p-1">
+                                <input type="number" id="t-min-${task.id}" value="${pad(defMin)}" min="0" max="999" class="bg-transparent w-full text-center focus:outline-none text-sm" placeholder="Min">
+                                <span class="text-gray-500 text-xs">:</span>
+                                <input type="number" id="t-sec-${task.id}" value="${pad(defSec)}" min="0" max="59" class="bg-transparent w-full text-center focus:outline-none text-sm" placeholder="Sec">
+                            </div>
+                            <button onclick="startTimer('${task.id}')" class="px-4 py-1.5 bg-indigo-500 hover:bg-indigo-400 text-white text-sm font-medium rounded-lg shadow-lg shadow-indigo-500/20 transition-colors">
+                                Start
+                            </button>
+                        </div>
+                        <div class="flex gap-2 mt-2 justify-center">
+                             <button onclick="quickSetTimer('${task.id}', 5)" class="text-[10px] px-2 py-1 rounded bg-white/5 hover:bg-white/10 text-gray-400">+5m</button>
+                             <button onclick="quickSetTimer('${task.id}', 10)" class="text-[10px] px-2 py-1 rounded bg-white/5 hover:bg-white/10 text-gray-400">+10m</button>
+                             <button onclick="quickSetTimer('${task.id}', 25)" class="text-[10px] px-2 py-1 rounded bg-white/5 hover:bg-white/10 text-gray-400">+25m</button>
+                        </div>
+                    `;
+                }
+                div.appendChild(timerPanel);
+            }
+            
+            DOM.taskList.appendChild(div);
+        };
+
+        const escapeHtml = (unsafe) => unsafe.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+
+        window.openCalendar = () => { try { DOM.datePicker.showPicker(); } catch (e) { DOM.datePicker.click(); } };
+        window.changeDate = (d) => { currentDate.setDate(currentDate.getDate() + d); currentDate = new Date(currentDate); updateUI(); };
+        DOM.datePicker.addEventListener('change', (e) => { if(e.target.value) { const p=e.target.value.split('-'); currentDate = new Date(p[0], p[1]-1, p[2]); updateUI(); } });
+        window.goToToday = () => { currentDate = new Date(); updateUI(); };
+        
+        window.toggleTask = (id) => {
+            const t = tasks.find(x => x.id === id);
+            if(t) { 
+                t.completed = !t.completed; 
+                if(t.completed) { 
+                    triggerConfetti(); 
+                    showQuote(); 
+                    sendNotification('Goal Completed! 🎉', `You completed: ${t.text}`);
+                } 
+                saveTasks(); 
+                updateUI(); 
+            }
+        };
+        window.deleteTask = (id) => { tasks = tasks.filter(t => t.id !== id); saveTasks(); updateUI(); };
+
+        window.toggleTimerPanel = (id) => { expandedTimerId = expandedTimerId === id ? null : id; updateUI(); };
+        
+        window.startTimer = (id) => {
+            const min = parseInt(document.getElementById(`t-min-${id}`).value) || 0;
+            const sec = parseInt(document.getElementById(`t-sec-${id}`).value) || 0;
+            const duration = (min * 60 + sec) * 1000;
+            if (duration <= 0) return;
+
+            const task = tasks.find(t => t.id === id);
+            task.defaultTimerDuration = duration; 
+            task.timerEnd = Date.now() + duration;
+            task.timerPaused = null;
+            saveTasks();
+            updateUI();
+        };
+
+        window.pauseTimer = (id) => {
+            const task = tasks.find(t => t.id === id);
+            if (task.timerEnd) {
+                task.timerPaused = Math.max(0, task.timerEnd - Date.now());
+                task.timerEnd = null;
+                saveTasks();
+                updateUI();
+            }
+        };
+
+        window.resumeTimer = (id) => {
+            const task = tasks.find(t => t.id === id);
+            if (task.timerPaused) {
+                task.timerEnd = Date.now() + task.timerPaused;
+                task.timerPaused = null;
+                saveTasks();
+                updateUI();
+            }
+        };
+
+        window.stopTimer = (id) => {
+            const task = tasks.find(t => t.id === id);
+            task.timerEnd = null;
+            task.timerPaused = null;
+            saveTasks();
+            updateUI();
+        };
+        
+        window.quickSetTimer = (id, mins) => {
+             document.getElementById(`t-min-${id}`).value = pad(mins);
+             document.getElementById(`t-sec-${id}`).value = "00";
+        };
+
+        const addTask = (e) => {
+            e.preventDefault();
+            const text = DOM.taskInput.value.trim();
+            if (!text) return;
+            tasks.push({
+                id: crypto.randomUUID(),
+                text: text,
+                priority: currentPriority, 
+                dueTime: DOM.timeInput.value,
+                completed: false,
+                date: currentDate.toISOString(),
+                createdAt: new Date().toISOString()
+            });
+            DOM.taskInput.value = ''; DOM.timeInput.value = '';
+            saveTasks(); updateUI(); addToast('Goal added successfully');
+        };
+
+        // --- Background Loop (1s) ---
+        setInterval(() => {
+            const now = new Date();
+            const nowMs = Date.now();
+            let uiNeedsUpdate = false;
+
+            tasks.forEach(t => {
+                if (!t.completed && t.dueTime && !t.notified) {
+                    const d = new Date(t.date);
+                    if (isSameDay(d, now) && now.toTimeString().slice(0,5) >= t.dueTime) {
+                        sendNotification("Time's Up! ⏰", `Deadline for "${t.text}" reached!`);
+                        t.notified = true;
+                        saveTasks();
+                    }
+                }
+
+                if (t.timerEnd) {
+                    uiNeedsUpdate = true; 
+                    if (nowMs >= t.timerEnd) {
+                        t.timerEnd = null;
+                        t.timerPaused = null;
+                        sendNotification("Timer Finished! ⏱️", `Time is up for goal: "${t.text}"`);
+                        triggerConfetti(); 
+                        saveTasks();
+                    }
+                }
+            });
+            
+            if (uiNeedsUpdate && isDailyView) updateUI();
+        }, 1000);
+
+        const addToast = (msg) => {
+            const el = document.createElement('div');
+            el.className = 'pointer-events-auto bg-gray-800/90 backdrop-blur-md text-white px-4 py-3 rounded-lg shadow-xl border border-white/10 flex items-center gap-3 animate-slide-up';
+            el.innerHTML = `<div class="w-2 h-2 rounded-full bg-green-400"></div><span class="text-sm font-medium">${msg}</span>`;
+            DOM.toastContainer.appendChild(el);
+            setTimeout(() => el.remove(), 3000);
+        };
+
+        const sendNotification = (title, body) => {
+            addToast(body);
+            if (notifPermission === 'granted') new Notification(title, { body, icon: 'https://cdn-icons-png.flaticon.com/512/1486/1486433.png' });
+        };
+
+        DOM.notifBtn.addEventListener('click', async () => {
+            if (typeof Notification !== 'undefined') {
+                const p = await Notification.requestPermission();
+                notifPermission = p;
+                if (p === 'granted') { DOM.notifBtn.classList.replace('text-gray-400', 'text-green-400'); DOM.notifBtn.classList.add('bg-green-400/10'); addToast('Notifications enabled!'); }
+            }
+        });
+
+        DOM.form.addEventListener('submit', addTask);
+        DOM.taskInput.addEventListener('input', (e) => {
+            const hasText = e.target.value.trim().length > 0;
+            DOM.addBtn.disabled = !hasText;
+            if(hasText) DOM.addBtn.classList.remove('opacity-50', 'cursor-not-allowed'); else DOM.addBtn.classList.add('opacity-50', 'cursor-not-allowed');
+        });
+
+        if (notifPermission === 'granted') { DOM.notifBtn.classList.replace('text-gray-400', 'text-green-400'); DOM.notifBtn.classList.add('bg-green-400/10'); }
+        updateUI();
+    </script>
+</body>
+</html>

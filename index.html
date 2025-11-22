@@ -1,165 +1,220 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="dark">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Modern Expense Tracker</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+    <title>Student Expense Manager</title>
     
-    <!-- Tailwind CSS -->
+    <!-- Libraries -->
     <script src="https://cdn.tailwindcss.com"></script>
-    
-    <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest"></script>
-    
-    <!-- Chart.js -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
-    
-    <!-- jsPDF + AutoTable -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.6.0/jspdf.plugin.autotable.min.js"></script>
+    
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Outfit:wght@500;700;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
 
-    <!-- Google Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        display: ['Outfit', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace'],
+                    },
+                    animation: {
+                        'float': 'float 6s ease-in-out infinite',
+                        'slide-up': 'slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards',
+                        'pulse-glow': 'pulseGlow 2s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                    },
+                    keyframes: {
+                        float: {
+                            '0%, 100%': { transform: 'translateY(0)' },
+                            '50%': { transform: 'translateY(-20px)' },
+                        },
+                        slideUp: {
+                            '0%': { transform: 'translateY(20px)', opacity: 0 },
+                            '100%': { transform: 'translateY(0)', opacity: 1 }
+                        },
+                        pulseGlow: {
+                            '0%, 100%': { opacity: 1, filter: 'brightness(1.2)' },
+                            '50%': { opacity: 0.7, filter: 'brightness(1)' },
+                        }
+                    },
+                    colors: {
+                        cyber: {
+                            dark: '#050507',
+                            card: 'rgba(20, 20, 25, 0.6)',
+                            border: 'rgba(255, 255, 255, 0.08)'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
 
     <style>
-        body { font-family: 'Inter', sans-serif; }
+        body {
+            background-color: #050507;
+            color: #e2e8f0;
+            overflow-x: hidden;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .bg-grid {
+            background-size: 50px 50px;
+            background-image: linear-gradient(to right, rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+                              linear-gradient(to bottom, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+            mask-image: radial-gradient(circle at center, black 40%, transparent 100%);
+        }
+
+        .glass-panel {
+            background: rgba(20, 20, 25, 0.6);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.3);
+        }
+
+        .glass-input {
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: white;
+            transition: all 0.3s ease;
+        }
+        .glass-input:focus {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: rgba(139, 92, 246, 0.5);
+            outline: none;
+        }
         
-        /* Custom Scrollbar */
-        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
-        .custom-scrollbar::-webkit-scrollbar-track { background: rgba(255,255,255,0.05); }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 10px; }
-        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.3); }
-
-        /* Animations */
-        @keyframes slideUp {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
+        select.glass-input option {
+            background-color: #101015;
+            color: white;
         }
-        .animate-slide-up { animation: slideUp 0.3s ease-out forwards; }
+
+        /* Scrollbar */
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #3f3f46; border-radius: 10px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #71717a; }
+
+        .btn-glow { position: relative; overflow: hidden; transition: all 0.3s ease; }
+        .btn-glow:hover { box-shadow: 0 0 15px rgba(139, 92, 246, 0.3); transform: translateY(-1px); }
+
+        /* Chart container */
+        .chart-wrapper { position: relative; height: 250px; width: 100%; }
         
-        /* Glass Input Autofill Fix */
-        input:-webkit-autofill,
-        input:-webkit-autofill:hover, 
-        input:-webkit-autofill:focus, 
-        input:-webkit-autofill:active{
-            -webkit-box-shadow: 0 0 0 30px #2d3748 inset !important;
-            -webkit-text-fill-color: white !important;
-            transition: background-color 5000s ease-in-out 0s;
+        /* Date Input Hack */
+        input[type="date"]::-webkit-calendar-picker-indicator {
+            filter: invert(1); opacity: 0.6; cursor: pointer;
         }
-
-        /* Chart Container Height */
-        .chart-wrapper {
-            position: relative;
-            height: 300px;
-            width: 100%;
-        }
-
-        /* Loading Spinner */
-        .spinner {
-            border: 3px solid rgba(255,255,255,0.3);
-            border-radius: 50%;
-            border-top: 3px solid #fff;
-            width: 20px;
-            height: 20px;
-            animation: spin 1s linear infinite;
-        }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     </style>
 </head>
-<body class="min-h-screen w-full relative bg-gray-900 text-white overflow-x-hidden p-4 sm:p-6">
+<body class="min-h-screen flex flex-col">
 
-    <!-- Background -->
-    <div class="fixed inset-0 z-0">
-        <img src="https://images.unsplash.com/photo-1579621970563-ebec7560ff3e?q=80&w=2070&auto=format&fit=crop" alt="Background" class="w-full h-full object-cover opacity-40">
-        <div class="absolute inset-0 bg-gradient-to-br from-indigo-900/90 via-purple-900/80 to-black/80 backdrop-blur-sm"></div>
+    <!-- Ambient Background -->
+    <div class="fixed inset-0 z-0 pointer-events-none">
+        <div class="absolute inset-0 bg-grid"></div>
+        <div class="absolute top-0 left-1/4 w-96 h-96 bg-purple-600/10 rounded-full blur-[100px] animate-float"></div>
+        <div class="absolute bottom-0 right-1/4 w-96 h-96 bg-blue-600/10 rounded-full blur-[100px] animate-float" style="animation-delay: -2s;"></div>
     </div>
 
-    <div class="relative z-10 max-w-7xl mx-auto">
+    <!-- Main App Container -->
+    <div class="relative z-10 w-full max-w-7xl mx-auto flex flex-col p-4 md:p-6 gap-6">
         
         <!-- Header -->
-        <div class="flex flex-col md:flex-row justify-between items-center mb-8 animate-slide-up">
-            <div class="flex items-center space-x-3 mb-4 md:mb-0">
-                <div class="p-3 bg-indigo-500/20 rounded-2xl border border-indigo-500/30 shadow-lg shadow-indigo-500/10">
-                    <i data-lucide="wallet" class="w-8 h-8 text-indigo-300"></i>
+        <header class="flex flex-col md:flex-row justify-between items-center gap-4 shrink-0 animate-slide-up">
+            <div class="flex items-center gap-4 w-full md:w-auto">
+                <div class="relative group shrink-0">
+                    <div class="absolute inset-0 bg-gradient-to-r from-purple-600 to-blue-600 rounded-xl blur opacity-40 group-hover:opacity-70 transition duration-500"></div>
+                    <div class="relative bg-black/40 p-3 rounded-xl border border-white/10 backdrop-blur-sm">
+                        <i data-lucide="wallet" class="w-8 h-8 text-purple-400"></i>
+                    </div>
                 </div>
-                <div>
-                    <div class="text-xs font-semibold text-indigo-300 uppercase tracking-widest mb-0.5">Financial Tracker</div>
-                    <h1 class="text-2xl md:text-3xl font-bold tracking-wide text-white">Student Finances</h1>
+                <div class="min-w-0 flex-1">
+                    <div class="flex items-center gap-2">
+                        <h1 class="font-display text-2xl sm:text-3xl font-bold text-white tracking-tight truncate">Student Expense <span class="text-purple-500">Manager</span></h1>
+                    </div>
                 </div>
             </div>
 
-            <!-- Month Navigation -->
-            <div class="flex items-center bg-white/10 backdrop-blur-md rounded-2xl p-1.5 border border-white/10 shadow-xl">
-                <button id="prevMonth" class="p-2 hover:bg-white/10 rounded-xl transition-colors text-gray-300 hover:text-white">
-                    <i data-lucide="chevron-left" class="w-5 h-5"></i>
-                </button>
-                <div class="px-6 text-center min-w-[140px]">
-                    <div id="currentMonthDisplay" class="text-sm font-bold text-white">--</div>
-                    <div id="monthStats" class="text-[10px] text-indigo-200">Loading...</div>
+            <!-- Month Nav -->
+            <div class="glass-panel rounded-2xl p-1.5 flex gap-2 items-center w-full md:w-auto justify-between md:justify-start">
+                <button id="prevMonth" class="p-3 hover:bg-white/5 rounded-xl text-gray-400 hover:text-white transition-colors"><i data-lucide="chevron-left" class="w-5 h-5"></i></button>
+                <div class="flex flex-col items-center justify-center px-4 min-w-[140px]">
+                    <span id="currentMonthDisplay" class="font-display font-bold text-lg text-white leading-tight">--</span>
+                    <span id="monthStats" class="text-[10px] text-purple-300 font-mono">Loading...</span>
                 </div>
-                <button id="nextMonth" class="p-2 hover:bg-white/10 rounded-xl transition-colors text-gray-300 hover:text-white">
-                    <i data-lucide="chevron-right" class="w-5 h-5"></i>
-                </button>
+                <button id="nextMonth" class="p-3 hover:bg-white/5 rounded-xl text-gray-400 hover:text-white transition-colors"><i data-lucide="chevron-right" class="w-5 h-5"></i></button>
             </div>
-        </div>
+        </header>
 
         <!-- Summary Cards -->
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8 animate-slide-up" style="animation-delay: 0.1s;">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 animate-slide-up" style="animation-delay: 0.1s;">
             <!-- Balance -->
-            <div class="md:col-span-1 bg-gradient-to-br from-indigo-600/90 to-purple-700/90 backdrop-blur-xl rounded-3xl p-6 border border-white/10 shadow-2xl relative overflow-hidden group">
-                <div class="absolute top-0 right-0 -mt-4 -mr-4 w-24 h-24 bg-white/10 rounded-full blur-2xl group-hover:bg-white/20 transition-colors"></div>
-                <h3 class="text-indigo-100 text-sm font-medium mb-1">Total Balance</h3>
-                <div id="balance" class="text-4xl font-bold text-white mb-2">₹0</div>
-                <div id="balanceStatus" class="text-xs text-indigo-200 bg-black/20 inline-block px-3 py-1 rounded-full">Calculating...</div>
+            <div class="glass-panel rounded-2xl p-6 relative overflow-hidden group">
+                <div class="absolute inset-0 bg-gradient-to-br from-purple-600/10 to-blue-600/10 group-hover:opacity-100 transition-opacity duration-500"></div>
+                <div class="absolute top-0 right-0 -mt-4 -mr-4 w-24 h-24 bg-purple-500/10 rounded-full blur-2xl"></div>
+                <div class="relative z-10">
+                    <h3 class="text-gray-400 text-xs font-medium uppercase tracking-wider mb-1">Total Balance</h3>
+                    <div id="balance" class="font-display text-3xl font-bold text-white mb-2">₹0</div>
+                    <div id="balanceStatus" class="text-[10px] font-bold px-2 py-1 rounded-lg inline-block bg-white/5 text-gray-400 border border-white/5">Calculating...</div>
+                </div>
             </div>
 
             <!-- Income -->
-            <div class="bg-white/5 backdrop-blur-xl rounded-3xl p-6 border border-white/10 shadow-xl hover:bg-white/10 transition-colors">
+            <div class="glass-panel rounded-2xl p-6 relative group hover:bg-white/5 transition-colors">
                 <div class="flex justify-between items-start mb-4">
                     <div>
                         <h3 class="text-gray-400 text-xs font-medium uppercase tracking-wider">Income</h3>
-                        <div id="totalIncome" class="text-2xl font-bold text-emerald-400 mt-1">₹0</div>
+                        <div id="totalIncome" class="font-display text-2xl font-bold text-emerald-400 mt-1">₹0</div>
                     </div>
-                    <div class="p-2 bg-emerald-500/20 rounded-xl">
-                        <i data-lucide="trending-up" class="w-6 h-6 text-emerald-400"></i>
+                    <div class="p-2 bg-emerald-500/10 rounded-xl border border-emerald-500/20">
+                        <i data-lucide="trending-up" class="w-5 h-5 text-emerald-400"></i>
                     </div>
                 </div>
-                <div class="w-full bg-gray-700/50 h-1.5 rounded-full overflow-hidden">
-                    <div id="incomeBar" class="h-full bg-emerald-500" style="width: 0%"></div>
+                <div class="w-full bg-gray-800 h-1 rounded-full overflow-hidden">
+                    <div id="incomeBar" class="h-full bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.5)]" style="width: 0%"></div>
                 </div>
             </div>
 
             <!-- Expense -->
-            <div class="bg-white/5 backdrop-blur-xl rounded-3xl p-6 border border-white/10 shadow-xl hover:bg-white/10 transition-colors">
+            <div class="glass-panel rounded-2xl p-6 relative group hover:bg-white/5 transition-colors">
                 <div class="flex justify-between items-start mb-4">
                     <div>
                         <h3 class="text-gray-400 text-xs font-medium uppercase tracking-wider">Expenses</h3>
-                        <div id="totalExpenses" class="text-2xl font-bold text-rose-400 mt-1">₹0</div>
+                        <div id="totalExpenses" class="font-display text-2xl font-bold text-rose-400 mt-1">₹0</div>
                     </div>
-                    <div class="p-2 bg-rose-500/20 rounded-xl">
-                        <i data-lucide="trending-down" class="w-6 h-6 text-rose-400"></i>
+                    <div class="p-2 bg-rose-500/10 rounded-xl border border-rose-500/20">
+                        <i data-lucide="trending-down" class="w-5 h-5 text-rose-400"></i>
                     </div>
                 </div>
-                <div class="w-full bg-gray-700/50 h-1.5 rounded-full overflow-hidden">
-                    <div id="expenseBar" class="h-full bg-rose-500" style="width: 0%"></div>
+                <div class="w-full bg-gray-800 h-1 rounded-full overflow-hidden">
+                    <div id="expenseBar" class="h-full bg-rose-500 shadow-[0_0_10px_rgba(244,63,94,0.5)]" style="width: 0%"></div>
                 </div>
             </div>
         </div>
 
         <!-- Main Grid -->
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
             
             <!-- Left Column: Input Forms -->
             <div class="lg:col-span-1 space-y-6 animate-slide-up" style="animation-delay: 0.2s;">
                 
                 <!-- Add Transaction Container -->
-                <div class="bg-white/5 backdrop-blur-xl border border-white/10 rounded-3xl overflow-hidden">
+                <div class="glass-panel rounded-2xl overflow-hidden">
                     <!-- Tabs -->
                     <div class="flex border-b border-white/10">
-                        <button onclick="switchTab('income')" id="tabIncome" class="flex-1 py-4 text-sm font-semibold text-emerald-400 bg-emerald-500/10 border-b-2 border-emerald-500 transition-all hover:bg-emerald-500/20">
+                        <button onclick="switchTab('income')" id="tabIncome" class="flex-1 py-4 text-sm font-bold text-emerald-400 bg-emerald-500/10 border-b-2 border-emerald-500 transition-all hover:bg-emerald-500/20">
                             Add Income
                         </button>
-                        <button onclick="switchTab('expense')" id="tabExpense" class="flex-1 py-4 text-sm font-semibold text-gray-400 hover:text-white hover:bg-white/5 transition-all border-b-2 border-transparent">
+                        <button onclick="switchTab('expense')" id="tabExpense" class="flex-1 py-4 text-sm font-bold text-gray-400 hover:text-white hover:bg-white/5 transition-all border-b-2 border-transparent">
                             Add Expense
                         </button>
                     </div>
@@ -167,68 +222,76 @@
                     <div class="p-6">
                         <!-- Income Form -->
                         <form id="incomeForm" class="space-y-4">
-                            <div>
-                                <label class="block text-xs text-gray-400 mb-1.5">Category</label>
+                            <div class="space-y-1.5">
+                                <label class="text-xs text-gray-400 font-medium ml-1">Category</label>
                                 <div class="relative">
-                                    <select id="incomeCategory" class="w-full bg-black/20 text-white border border-white/10 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 appearance-none cursor-pointer" required>
-                                        <option value="" class="bg-gray-800">Select Source</option>
-                                        <option value="Pocket Money" class="bg-gray-800">💰 Pocket Money</option>
-                                        <option value="Borrow" class="bg-gray-800">🤝 Borrow</option>
-                                        <option value="Savings" class="bg-gray-800">💎 Savings</option>
-                                        <option value="Part-time Job" class="bg-gray-800">💼 Part-time Job</option>
+                                    <select id="incomeCategory" class="w-full glass-input rounded-xl px-4 py-3 appearance-none cursor-pointer text-sm" required>
+                                        <option value="" disabled selected>Select Source</option>
+                                        <option value="Pocket Money">💰 Pocket Money</option>
+                                        <option value="Borrow">🤝 Borrow</option>
+                                        <option value="Savings">💎 Savings</option>
                                     </select>
                                     <i data-lucide="chevron-down" class="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none"></i>
                                 </div>
                             </div>
-                            <div>
-                                <label class="block text-xs text-gray-400 mb-1.5">Amount (₹)</label>
-                                <input type="number" id="incomeAmount" min="0" step="0.01" placeholder="0.00" class="w-full bg-black/20 text-white border border-white/10 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 placeholder-gray-600" required>
+
+                            <div class="space-y-1.5">
+                                <label class="text-xs text-gray-400 font-medium ml-1">Amount (₹)</label>
+                                <input type="number" id="incomeAmount" min="0" step="0.01" placeholder="0.00" class="w-full glass-input rounded-xl px-4 py-3 text-sm font-mono placeholder-gray-600" required>
                             </div>
-                            <div>
-                                <label class="block text-xs text-gray-400 mb-1.5">Date</label>
-                                <input type="date" id="incomeDate" class="w-full bg-black/20 text-white border border-white/10 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-emerald-500/50" required>
+
+                            <div class="space-y-1.5">
+                                <label class="text-xs text-gray-400 font-medium ml-1">Date</label>
+                                <input type="date" id="incomeDate" class="w-full glass-input rounded-xl px-4 py-3 text-sm" required>
                             </div>
-                            <div>
-                                <label class="block text-xs text-gray-400 mb-1.5">Description (Optional)</label>
-                                <input type="text" id="incomeDescription" placeholder="E.g. Monthly allowance" class="w-full bg-black/20 text-white border border-white/10 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 placeholder-gray-600">
+
+                            <div class="space-y-1.5">
+                                <label class="text-xs text-gray-400 font-medium ml-1">Description (Optional)</label>
+                                <input type="text" id="incomeDescription" placeholder="E.g. Monthly allowance" class="w-full glass-input rounded-xl px-4 py-3 text-sm placeholder-gray-600">
                             </div>
-                            <button type="submit" class="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-semibold py-3 rounded-xl shadow-lg shadow-emerald-500/20 transition-all transform active:scale-95 flex justify-center items-center gap-2">
+
+                            <button type="submit" class="w-full btn-glow bg-emerald-600/20 hover:bg-emerald-600/30 border border-emerald-500/50 text-emerald-400 font-bold py-3 rounded-xl transition-all flex justify-center items-center gap-2 mt-2">
                                 <i data-lucide="plus-circle" class="w-5 h-5"></i> Add Income
                             </button>
                         </form>
 
-                        <!-- Expense Form (Hidden by default) -->
+                        <!-- Expense Form -->
                         <form id="expenseForm" class="space-y-4 hidden">
-                            <div>
-                                <label class="block text-xs text-gray-400 mb-1.5">Category</label>
+                            <div class="space-y-1.5">
+                                <label class="text-xs text-gray-400 font-medium ml-1">Category</label>
                                 <div class="relative">
-                                    <select id="expenseCategory" class="w-full bg-black/20 text-white border border-white/10 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-rose-500/50 appearance-none cursor-pointer" required>
-                                        <option value="" class="bg-gray-800">Select Expense</option>
-                                        <option value="Room Rent & Room" class="bg-gray-800">🏠 Rent & Room</option>
-                                        <option value="Food" class="bg-gray-800">🍕 Food & Dining</option>
-                                        <option value="Transport" class="bg-gray-800">🚌 Transport</option>
-                                        <option value="Education" class="bg-gray-800">📚 Education Fees</option>
-                                        <option value="Books" class="bg-gray-800">📖 Books & Supplies</option>
-                                        <option value="Entertainment" class="bg-gray-800">🎮 Entertainment</option>
-                                        <option value="Mobile & Data" class="bg-gray-800">📱 Mobile & Data</option>
-                                        <option value="Others" class="bg-gray-800">🔧 Others</option>
+                                    <select id="expenseCategory" class="w-full glass-input rounded-xl px-4 py-3 appearance-none cursor-pointer text-sm" required>
+                                        <option value="" disabled selected>Select Expense</option>
+                                        <option value="Room Rent">🏠 Room Rent</option>
+                                        <option value="Room Accessories">🛋️ Room Accessories</option>
+                                        <option value="Food">🍕 Food & Dining</option>
+                                        <option value="Transport">🚌 Transport</option>
+                                        <option value="Education">📚 Education Fees</option>
+                                        <option value="Books">📖 Books & Supplies</option>
+                                        <option value="Entertainment">🎮 Entertainment</option>
+                                        <option value="Mobile & Data">📱 Mobile & Data</option>
+                                        <option value="Others">🔧 Others</option>
                                     </select>
                                     <i data-lucide="chevron-down" class="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none"></i>
                                 </div>
                             </div>
-                            <div>
-                                <label class="block text-xs text-gray-400 mb-1.5">Amount (₹)</label>
-                                <input type="number" id="expenseAmount" min="0" step="0.01" placeholder="0.00" class="w-full bg-black/20 text-white border border-white/10 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-rose-500/50 placeholder-gray-600" required>
+
+                            <div class="space-y-1.5">
+                                <label class="text-xs text-gray-400 font-medium ml-1">Amount (₹)</label>
+                                <input type="number" id="expenseAmount" min="0" step="0.01" placeholder="0.00" class="w-full glass-input rounded-xl px-4 py-3 text-sm font-mono placeholder-gray-600" required>
                             </div>
-                            <div>
-                                <label class="block text-xs text-gray-400 mb-1.5">Date</label>
-                                <input type="date" id="expenseDate" class="w-full bg-black/20 text-white border border-white/10 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-rose-500/50" required>
+
+                            <div class="space-y-1.5">
+                                <label class="text-xs text-gray-400 font-medium ml-1">Date</label>
+                                <input type="date" id="expenseDate" class="w-full glass-input rounded-xl px-4 py-3 text-sm" required>
                             </div>
-                            <div>
-                                <label class="block text-xs text-gray-400 mb-1.5">Description (Optional)</label>
-                                <input type="text" id="expenseDescription" placeholder="E.g. Pizza night" class="w-full bg-black/20 text-white border border-white/10 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-rose-500/50 placeholder-gray-600">
+
+                            <div class="space-y-1.5">
+                                <label class="text-xs text-gray-400 font-medium ml-1">Description (Optional)</label>
+                                <input type="text" id="expenseDescription" placeholder="E.g. Pizza night" class="w-full glass-input rounded-xl px-4 py-3 text-sm placeholder-gray-600">
                             </div>
-                            <button type="submit" class="w-full bg-rose-500 hover:bg-rose-600 text-white font-semibold py-3 rounded-xl shadow-lg shadow-rose-500/20 transition-all transform active:scale-95 flex justify-center items-center gap-2">
+
+                            <button type="submit" class="w-full btn-glow bg-rose-600/20 hover:bg-rose-600/30 border border-rose-500/50 text-rose-400 font-bold py-3 rounded-xl transition-all flex justify-center items-center gap-2 mt-2">
                                 <i data-lucide="minus-circle" class="w-5 h-5"></i> Add Expense
                             </button>
                         </form>
@@ -236,11 +299,11 @@
                 </div>
 
                 <!-- Export Section -->
-                <div class="bg-gradient-to-r from-indigo-600 to-blue-600 rounded-3xl p-6 shadow-xl border border-white/10 text-center relative overflow-hidden">
-                    <div class="absolute inset-0 bg-white/5 pattern-grid-lg opacity-10"></div>
-                    <h3 class="relative z-10 text-lg font-bold text-white mb-2">Export Financial Report</h3>
-                    <p class="relative z-10 text-indigo-100 text-xs mb-4 opacity-90">Generate a professional PDF with monthly summaries, history, and breakdown chart.</p>
-                    <button id="generateData" class="relative z-10 bg-white text-indigo-600 hover:bg-indigo-50 px-6 py-2.5 rounded-xl text-sm font-bold shadow-lg transition-all transform hover:scale-105 flex items-center justify-center gap-2 mx-auto">
+                <div class="glass-panel rounded-2xl p-6 text-center relative overflow-hidden group border-purple-500/30">
+                    <div class="absolute inset-0 bg-gradient-to-r from-purple-600/10 to-blue-600/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+                    <h3 class="relative z-10 text-lg font-bold text-white mb-2">Export Report</h3>
+                    <p class="relative z-10 text-gray-400 text-xs mb-4">Generate a professional PDF with summaries and charts.</p>
+                    <button id="generateData" class="relative z-10 btn-glow bg-white/10 hover:bg-white/20 border border-white/10 text-white px-6 py-2.5 rounded-xl text-sm font-bold transition-all flex items-center justify-center gap-2 mx-auto w-full sm:w-auto">
                         <i data-lucide="file-text" class="w-4 h-4"></i> Download PDF
                     </button>
                 </div>
@@ -251,14 +314,14 @@
             <div class="lg:col-span-2 space-y-6 animate-slide-up" style="animation-delay: 0.3s;">
                 
                 <!-- Analytics Card -->
-                <div class="bg-white/5 backdrop-blur-xl border border-white/10 rounded-3xl p-6 shadow-xl">
+                <div class="glass-panel rounded-2xl p-6">
                     <div class="flex justify-between items-center mb-6">
                         <div>
                             <h2 class="text-lg font-bold text-white">Spending Breakdown</h2>
                             <p class="text-xs text-gray-400">Where your money went this month</p>
                         </div>
-                        <div class="p-2 bg-white/5 rounded-lg">
-                            <i data-lucide="pie-chart" class="w-5 h-5 text-indigo-300"></i>
+                        <div class="p-2 bg-white/5 rounded-xl">
+                            <i data-lucide="pie-chart" class="w-5 h-5 text-purple-400"></i>
                         </div>
                     </div>
                     
@@ -266,7 +329,7 @@
                         <div class="chart-wrapper flex justify-center items-center">
                             <canvas id="expenseChart"></canvas>
                         </div>
-                        <div id="expenseBreakdown" class="space-y-3 max-h-[300px] overflow-y-auto custom-scrollbar pr-2">
+                        <div id="expenseBreakdown" class="space-y-3 max-h-[250px] overflow-y-auto custom-scrollbar pr-2">
                             <!-- Breakdown items injected here -->
                             <div class="text-center text-gray-500 py-10 text-sm">No expense data available yet.</div>
                         </div>
@@ -274,10 +337,10 @@
                 </div>
 
                 <!-- Recent Transactions -->
-                <div class="bg-white/5 backdrop-blur-xl border border-white/10 rounded-3xl p-6 shadow-xl">
+                <div class="glass-panel rounded-2xl p-6 flex-1">
                     <div class="flex justify-between items-center mb-4">
-                        <h2 class="text-lg font-bold text-white">Recent Transactions</h2>
-                        <span id="txCount" class="px-3 py-1 bg-indigo-500/20 text-indigo-300 rounded-full text-xs font-bold border border-indigo-500/30">0 Items</span>
+                        <h2 class="text-lg font-bold text-white">Transactions</h2>
+                        <span id="txCount" class="px-3 py-1 bg-white/5 text-gray-300 rounded-full text-[10px] font-bold border border-white/10">0 Items</span>
                     </div>
                     
                     <div id="transactionsList" class="space-y-3 max-h-[400px] overflow-y-auto custom-scrollbar pr-2">
@@ -291,43 +354,41 @@
     </div>
 
     <!-- Delete Modal -->
-    <div id="deleteModal" class="fixed inset-0 z-50 hidden flex items-center justify-center">
-        <div class="absolute inset-0 bg-black/70 backdrop-blur-sm" onclick="expenseTracker.hideDeleteModal()"></div>
-        <div class="relative bg-gray-900 border border-white/10 p-6 rounded-3xl shadow-2xl max-w-sm w-full text-center animate-slide-up">
-            <div class="w-12 h-12 bg-red-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
+    <div id="deleteModal" class="fixed inset-0 z-[60] hidden flex items-center justify-center p-4">
+        <div class="absolute inset-0 bg-black/80 backdrop-blur-sm" onclick="expenseTracker.hideDeleteModal()"></div>
+        <div class="relative glass-panel border-red-500/30 p-6 rounded-3xl shadow-2xl max-w-sm w-full text-center animate-slide-up">
+            <div class="w-12 h-12 bg-red-500/20 rounded-full flex items-center justify-center mx-auto mb-4 shadow-[0_0_15px_rgba(239,68,68,0.3)]">
                 <i data-lucide="trash-2" class="w-6 h-6 text-red-400"></i>
             </div>
             <h3 class="text-xl font-bold text-white mb-2">Delete Transaction?</h3>
-            <p class="text-gray-400 text-sm mb-4">This action cannot be undone. Are you sure you want to remove this record?</p>
-            <div id="transactionDetails" class="bg-white/5 rounded-xl p-3 mb-6 text-left text-sm text-gray-300 border border-white/5"></div>
+            <p class="text-gray-400 text-sm mb-6">This action cannot be undone.</p>
+            <div id="transactionDetails" class="bg-black/40 rounded-xl p-4 mb-6 text-left text-sm text-gray-300 border border-white/5 font-mono"></div>
             <div class="flex gap-3 justify-center">
-                <button onclick="expenseTracker.hideDeleteModal()" class="px-5 py-2 rounded-xl text-gray-400 hover:text-white hover:bg-white/10 transition-colors text-sm font-medium">Cancel</button>
-                <button onclick="expenseTracker.performDelete()" class="px-5 py-2 rounded-xl bg-red-500 hover:bg-red-600 text-white shadow-lg shadow-red-500/20 transition-colors text-sm font-medium">Delete</button>
+                <button onclick="expenseTracker.hideDeleteModal()" class="flex-1 px-5 py-3 rounded-xl text-gray-400 hover:text-white hover:bg-white/10 transition-colors text-sm font-bold">Cancel</button>
+                <button onclick="expenseTracker.performDelete()" class="flex-1 px-5 py-3 rounded-xl bg-red-500/20 hover:bg-red-500/30 text-red-400 border border-red-500/50 shadow-lg shadow-red-500/10 transition-colors text-sm font-bold">Delete</button>
             </div>
         </div>
     </div>
 
     <!-- Toast Container -->
-    <div id="toastContainer" class="fixed bottom-6 right-6 z-50 flex flex-col gap-2 pointer-events-none"></div>
+    <div id="toastContainer" class="fixed top-6 right-6 z-[70] flex flex-col gap-3 pointer-events-none items-end"></div>
 
     <script>
         // --- Toast Notification System ---
         const addToast = (message, type = 'success') => {
             const container = document.getElementById('toastContainer');
             const el = document.createElement('div');
-            const bgClass = type === 'success' ? 'bg-emerald-500/90' : (type === 'error' ? 'bg-rose-500/90' : 'bg-indigo-500/90');
-            el.className = `pointer-events-auto ${bgClass} backdrop-blur-md text-white px-4 py-3 rounded-xl shadow-xl border border-white/10 flex items-center gap-3 animate-slide-up max-w-xs`;
+            const color = type === 'success' ? 'text-emerald-400' : (type === 'error' ? 'text-rose-400' : 'text-blue-400');
+            const border = type === 'success' ? 'border-emerald-500/50' : (type === 'error' ? 'border-rose-500/50' : 'border-blue-500/50');
+            const icon = type === 'success' ? 'check-circle' : (type === 'error' ? 'alert-circle' : 'info');
             
-            let icon = type === 'success' ? 'check-circle' : (type === 'error' ? 'alert-circle' : 'info');
-            el.innerHTML = `
-                <i data-lucide="${icon}" class="w-5 h-5 shrink-0"></i>
-                <span class="text-sm font-medium">${message}</span>
-            `;
+            el.className = `pointer-events-auto glass-panel border ${border} backdrop-blur-md text-white px-4 py-3 rounded-xl shadow-xl flex items-center gap-3 animate-slide-up`;
+            el.innerHTML = `<i data-lucide="${icon}" class="w-4 h-4 ${color}"></i><span class="text-sm font-medium">${message}</span>`;
             container.appendChild(el);
             lucide.createIcons();
             setTimeout(() => {
                 el.style.opacity = '0';
-                el.style.transform = 'translateY(10px)';
+                el.style.transform = 'translateY(-10px)';
                 setTimeout(() => el.remove(), 300);
             }, 3000);
         };
@@ -335,16 +396,16 @@
         // --- Logic Class ---
         class ExpenseTracker {
             constructor() {
-                this.storageKey = 'glass_expense_tracker_v1';
+                this.storageKey = 'cyber_finance_v1';
                 this.allTransactions = this.loadData();
                 this.chart = null;
                 this.deleteTransactionId = null;
                 this.currentMonth = new Date().getMonth();
                 this.currentYear = new Date().getFullYear();
                 this.categoryIcons = {
-                    'Room Rent & Room': '🏠', 'Food': '🍕', 'Transport': '🚌', 'Education': '📚',
+                    'Room Rent': '🏠', 'Room Accessories': '🛋️', 'Food': '🍕', 'Transport': '🚌', 'Education': '📚',
                     'Books': '📖', 'Entertainment': '🎮', 'Mobile & Data': '📱', 'Others': '🔧', 
-                    'Pocket Money': '💰', 'Borrow': '🤝', 'Savings': '💎', 'Part-time Job': '💼'
+                    'Pocket Money': '💰', 'Borrow': '🤝', 'Savings': '💎'
                 };
                 this.monthNames = [
                     'January','February','March','April','May','June',
@@ -485,14 +546,14 @@
                 const statusEl = document.getElementById('balanceStatus');
                 
                 if(balance > 0){
-                    statusEl.textContent = 'Healthy Balance';
-                    statusEl.className = 'text-xs text-emerald-300 bg-emerald-500/20 inline-block px-3 py-1 rounded-full border border-emerald-500/30';
+                    statusEl.textContent = 'Healthy';
+                    statusEl.className = 'text-[10px] font-bold px-2 py-1 rounded-lg inline-block bg-emerald-500/20 text-emerald-300 border border-emerald-500/30';
                 } else if(balance === 0){
                     statusEl.textContent = 'Balanced';
-                    statusEl.className = 'text-xs text-blue-300 bg-blue-500/20 inline-block px-3 py-1 rounded-full border border-blue-500/30';
+                    statusEl.className = 'text-[10px] font-bold px-2 py-1 rounded-lg inline-block bg-blue-500/20 text-blue-300 border border-blue-500/30';
                 } else {
                     statusEl.textContent = 'Overspent';
-                    statusEl.className = 'text-xs text-rose-300 bg-rose-500/20 inline-block px-3 py-1 rounded-full border border-rose-500/30';
+                    statusEl.className = 'text-[10px] font-bold px-2 py-1 rounded-lg inline-block bg-rose-500/20 text-rose-300 border border-rose-500/30';
                 }
 
                 const max = Math.max(totalIncome, totalExpenses) || 1;
@@ -509,7 +570,7 @@
                 list.innerHTML = '';
 
                 if(tx.length === 0) {
-                    list.innerHTML = `<div class="flex flex-col items-center justify-center py-8 text-gray-500 opacity-60"><i data-lucide="inbox" class="w-10 h-10 mb-2"></i><p class="text-sm">No transactions yet</p></div>`;
+                    list.innerHTML = `<div class="flex flex-col items-center justify-center py-10 text-gray-500 opacity-60"><i data-lucide="inbox" class="w-10 h-10 mb-2 text-gray-600"></i><p class="text-sm">No transactions yet</p></div>`;
                     return;
                 }
 
@@ -524,17 +585,20 @@
                     div.className = `group flex items-center justify-between p-3 rounded-xl border border-white/5 bg-white/5 hover:bg-white/10 transition-all duration-200`;
                     div.innerHTML = `
                         <div class="flex items-center gap-3 overflow-hidden">
-                            <div class="w-10 h-10 rounded-lg flex items-center justify-center text-lg ${bgClass}">
+                            <div class="w-10 h-10 rounded-lg flex items-center justify-center text-lg border ${bgClass} shrink-0">
                                 ${icon}
                             </div>
                             <div class="min-w-0">
-                                <div class="font-semibold text-sm text-gray-200 truncate">${t.category}</div>
-                                <div class="text-xs text-gray-500 truncate">${t.description} • ${t.date}</div>
+                                <div class="font-bold text-sm text-gray-200 truncate">${t.category}</div>
+                                <div class="text-xs text-gray-500 truncate flex items-center gap-1">
+                                    <span>${t.date}</span>
+                                    ${t.description ? `<span class="w-1 h-1 rounded-full bg-gray-600"></span> <span>${t.description}</span>` : ''}
+                                </div>
                             </div>
                         </div>
-                        <div class="flex items-center gap-3">
-                            <span class="font-bold ${colorClass}">${sign}₹${t.amount.toLocaleString('en-IN')}</span>
-                            <button onclick="expenseTracker.showDeleteModal('${t.id}')" class="opacity-0 group-hover:opacity-100 p-1.5 text-gray-400 hover:text-red-400 hover:bg-red-400/10 rounded-lg transition-all">
+                        <div class="flex items-center gap-3 pl-2">
+                            <span class="font-mono font-bold text-sm ${colorClass}">${sign}₹${t.amount.toLocaleString('en-IN')}</span>
+                            <button onclick="expenseTracker.showDeleteModal('${t.id}')" class="opacity-0 group-hover:opacity-100 focus:opacity-100 p-2 text-gray-400 hover:text-rose-400 hover:bg-white/5 rounded-lg transition-all">
                                 <i data-lucide="trash-2" class="w-4 h-4"></i>
                             </button>
                         </div>
@@ -564,18 +628,18 @@
                     const pct = ((amt/totalExp)*100).toFixed(1);
                     const icon = this.categoryIcons[cat] || '🏷️';
                     return `
-                        <div class="flex items-center justify-between p-2 rounded-lg hover:bg-white/5 transition-colors">
-                            <div class="flex items-center gap-2">
+                        <div class="flex items-center justify-between p-2 rounded-lg hover:bg-white/5 transition-colors group">
+                            <div class="flex items-center gap-2 flex-1 min-w-0">
                                 <span class="text-sm">${icon}</span>
-                                <div>
-                                    <div class="text-xs font-medium text-gray-200">${cat}</div>
-                                    <div class="w-16 h-1 bg-gray-700 rounded-full mt-1 overflow-hidden">
-                                        <div class="h-full bg-indigo-500" style="width: ${pct}%"></div>
+                                <div class="flex-1 min-w-0">
+                                    <div class="text-xs font-bold text-gray-300 truncate">${cat}</div>
+                                    <div class="w-full bg-gray-700/50 h-1 rounded-full mt-1 overflow-hidden">
+                                        <div class="h-full bg-purple-500" style="width: ${pct}%"></div>
                                     </div>
                                 </div>
                             </div>
-                            <div class="text-right">
-                                <div class="text-xs font-bold text-white">₹${amt.toLocaleString('en-IN')}</div>
+                            <div class="text-right pl-3">
+                                <div class="text-xs font-bold text-white font-mono">₹${amt.toLocaleString('en-IN')}</div>
                                 <div class="text-[10px] text-gray-500">${pct}%</div>
                             </div>
                         </div>
@@ -586,14 +650,15 @@
                 const labels = sortedCats.map(x => x[0]);
                 const data = sortedCats.map(x => x[1]);
                 const colors = [
-                    '#818cf8', '#34d399', '#f472b6', '#fbbf24', '#60a5fa', 
-                    '#a78bfa', '#f87171', '#2dd4bf', '#fb923c', '#9ca3af'
+                    '#a855f7', '#3b82f6', '#10b981', '#f43f5e', '#f59e0b', 
+                    '#ec4899', '#6366f1', '#14b8a6', '#8b5cf6', '#64748b'
                 ];
 
                 if(this.chart) this.chart.destroy();
                 
                 Chart.defaults.color = '#9ca3af';
                 Chart.defaults.borderColor = '#374151';
+                Chart.defaults.font.family = "'JetBrains Mono', monospace";
 
                 this.chart = new Chart(ctx, {
                     type: 'doughnut',
@@ -603,22 +668,24 @@
                             data: data,
                             backgroundColor: colors,
                             borderWidth: 0,
-                            hoverOffset: 10
+                            hoverOffset: 5
                         }]
                     },
                     options: {
                         responsive: true,
                         maintainAspectRatio: false,
-                        cutout: '70%',
+                        cutout: '75%',
                         plugins: {
                             legend: { display: false },
                             tooltip: {
-                                backgroundColor: 'rgba(17, 24, 39, 0.9)',
+                                backgroundColor: 'rgba(20, 20, 25, 0.9)',
                                 titleColor: '#fff',
                                 bodyColor: '#e5e7eb',
-                                padding: 10,
-                                cornerRadius: 8,
-                                displayColors: true
+                                padding: 12,
+                                cornerRadius: 12,
+                                displayColors: true,
+                                borderColor: 'rgba(255,255,255,0.1)',
+                                borderWidth: 1
                             }
                         }
                     }
@@ -630,9 +697,9 @@
                 if(!t) return;
                 this.deleteTransactionId = id;
                 document.getElementById('transactionDetails').innerHTML = `
-                    <div class="flex justify-between mb-1"><span class="text-gray-400">Category:</span> <span class="text-white">${t.category}</span></div>
-                    <div class="flex justify-between mb-1"><span class="text-gray-400">Amount:</span> <span class="text-white font-bold">₹${t.amount}</span></div>
-                    <div class="flex justify-between"><span class="text-gray-400">Date:</span> <span class="text-white">${t.date}</span></div>
+                    <div class="flex justify-between mb-1"><span class="text-gray-500">Category:</span> <span class="text-white">${t.category}</span></div>
+                    <div class="flex justify-between mb-1"><span class="text-gray-500">Amount:</span> <span class="text-white font-bold">₹${t.amount}</span></div>
+                    <div class="flex justify-between"><span class="text-gray-500">Date:</span> <span class="text-gray-300">${t.date}</span></div>
                 `;
                 document.getElementById('deleteModal').classList.remove('hidden');
             }
@@ -679,11 +746,10 @@
                 return Object.entries(monthly).sort(([a],[b]) => b.localeCompare(a)).map(([,v]) => v);
             }
 
-            // --- Helper to Generate Chart Image for PDF ---
             async getChartImage(labels, data) {
                 return new Promise((resolve) => {
                     const canvas = document.createElement('canvas');
-                    canvas.width = 400; // Resolution for PDF
+                    canvas.width = 400; 
                     canvas.height = 200;
                     const ctx = canvas.getContext('2d');
                     
@@ -694,8 +760,8 @@
                             datasets: [{
                                 data: data,
                                 backgroundColor: [
-                                    '#818cf8', '#34d399', '#f472b6', '#fbbf24', '#60a5fa', 
-                                    '#a78bfa', '#f87171', '#2dd4bf', '#fb923c', '#9ca3af'
+                                    '#a855f7', '#3b82f6', '#10b981', '#f43f5e', '#f59e0b', 
+                                    '#ec4899', '#6366f1', '#14b8a6', '#8b5cf6', '#64748b'
                                 ],
                                 borderWidth: 0
                             }]
@@ -724,7 +790,7 @@
             async generateEnhancedPDF() {
                 const btn = document.getElementById('generateData');
                 const originalText = btn.innerHTML;
-                btn.innerHTML = '<div class="spinner"></div> Generating...';
+                btn.innerHTML = '<div class="animate-spin h-4 w-4 border-2 border-white/20 border-t-white rounded-full"></div> Generating...';
                 btn.disabled = true;
 
                 try {
@@ -737,25 +803,25 @@
 
                     const monthlyData = this.getAllMonthsSummary();
 
+                    // Title
                     doc.setFont('helvetica', 'bold'); 
-                    doc.setFontSize(22); 
-                    doc.setTextColor(67, 56, 202); 
-                    doc.text('Student Expense Tracker', pageWidth/2, y, {align:'center'});
+                    doc.setFontSize(24); 
+                    doc.setTextColor(147, 51, 234); // Purple
+                    doc.text('Student Expense Manager', pageWidth/2, y, {align:'center'});
 
                     y += 20; 
                     doc.setFont('helvetica', 'normal'); 
                     doc.setFontSize(12); 
-                    doc.setTextColor(107, 114, 128);
-                    doc.text('Comprehensive Financial Report', pageWidth/2, y, {align:'center'});
+                    doc.setTextColor(156, 163, 175);
+                    doc.text('Financial Report', pageWidth/2, y, {align:'center'});
 
-                    y += 25;
-                    doc.setFontSize(10);
-                    doc.text(`Generated on: ${new Date().toLocaleDateString('en-IN', {dateStyle:'full'})}`, pageWidth/2, y, {align:'center'});
-
-                    y += 30;
-                    doc.setDrawColor(226, 232, 240);
-                    doc.setFillColor(248, 250, 252);
-                    doc.roundedRect(left, y, usableWidth, 90, 5, 5, 'FD');
+                    y += 40;
+                    
+                    // Overall Summary Box
+                    doc.setDrawColor(147, 51, 234); // Purple border
+                    doc.setLineWidth(1);
+                    doc.setFillColor(250, 250, 255);
+                    doc.roundedRect(left, y, usableWidth, 90, 8, 8, 'FD');
 
                     const totalInc = monthlyData.reduce((s,m)=>s+m.income,0);
                     const totalExp = monthlyData.reduce((s,m)=>s+m.expenses,0);
@@ -767,28 +833,27 @@
                     doc.setTextColor(31, 41, 55);
                     doc.text('Executive Summary', pageWidth/2, y, {align:'center'});
 
-                    y += 20;
+                    y += 25;
                     doc.setFont('helvetica', 'normal');
                     doc.setFontSize(11);
                     doc.setTextColor(55, 65, 81);
-                    doc.text(`Total Income: Rs. ${totalInc.toLocaleString('en-IN')}`, left + 40, y);
-                    doc.text(`Total Expenses: Rs. ${totalExp.toLocaleString('en-IN')}`, pageWidth - right - 40, y, {align:'right'});
+                    doc.text(`Total Income: Rs. ${totalInc.toLocaleString('en-IN')}`, left + 30, y);
+                    doc.text(`Total Expenses: Rs. ${totalExp.toLocaleString('en-IN')}`, pageWidth - right - 30, y, {align:'right'});
                     
                     y += 20;
                     doc.setFont('helvetica', 'bold');
-                    doc.setTextColor(netBal >= 0 ? 16 : 220, netBal >= 0 ? 185 : 38, netBal >= 0 ? 129 : 38); 
+                    doc.setTextColor(netBal >= 0 ? 16 : 225, netBal >= 0 ? 185 : 29, netBal >= 0 ? 129 : 72); 
                     doc.text(`Net Balance: Rs. ${netBal.toLocaleString('en-IN')}`, pageWidth/2, y, {align:'center'});
 
                     doc.addPage(); y = 50;
 
-                    // --- Overall Analysis & Chart ---
+                    // --- Charts ---
                     doc.setFont('helvetica', 'bold'); 
                     doc.setFontSize(16); 
-                    doc.setTextColor(67, 56, 202);
-                    doc.text('Overall Expense Analysis', pageWidth/2, y, {align:'center'});
+                    doc.setTextColor(147, 51, 234);
+                    doc.text('Overall Spending Analysis', pageWidth/2, y, {align:'center'});
                     y += 30;
 
-                    // Calculate Overall Data
                     const allCats = {};
                     monthlyData.forEach(m => {
                         Object.entries(m.categories).forEach(([cat, amt]) => {
@@ -806,15 +871,15 @@
                         const xPos = (pageWidth - chartWidth) / 2;
                         
                         doc.addImage(chartImg, 'PNG', xPos, y, chartWidth, chartHeight);
-                        y += chartHeight + 20;
+                        y += chartHeight + 30;
 
-                        // Overall Table
                         doc.autoTable({
                             startY: y,
                             head: [['Category', 'Total Amount']],
                             body: sortedAllCats.map(([c, a]) => [c, `Rs. ${a.toLocaleString('en-IN')}`]),
-                            theme: 'striped',
-                            headStyles: { fillColor: [79, 70, 229] },
+                            theme: 'grid',
+                            headStyles: { fillColor: [147, 51, 234], halign: 'center' },
+                            columnStyles: { 1: { halign: 'right', fontStyle: 'bold' } },
                             margin: { left, right }
                         });
                         y = doc.lastAutoTable.finalY + 40;
@@ -824,98 +889,44 @@
                     monthlyData.forEach((m, idx) => {
                         if(y > pageHeight - 100) { doc.addPage(); y = 50; }
 
-                        doc.setFillColor(238, 242, 255); 
-                        doc.setDrawColor(199, 210, 254);
-                        doc.rect(left, y, usableWidth, 30, 'F');
-                        
                         doc.setFont('helvetica', 'bold');
                         doc.setFontSize(14);
-                        doc.setTextColor(67, 56, 202);
-                        doc.text(m.month, left + 10, y + 20);
+                        doc.setTextColor(59, 130, 246); // Blue
+                        doc.text(m.month, left, y);
+                        
+                        // Mini summary for month
+                        doc.setFontSize(10);
+                        doc.setTextColor(107, 114, 128);
+                        doc.text(`Balance: Rs. ${m.balance.toLocaleString('en-IN')}`, pageWidth - right, y, {align:'right'});
 
-                        y += 45;
-
-                        doc.autoTable({
-                            startY: y,
-                            head: [['Summary', 'Amount']],
-                            body: [
-                                ['Income', `Rs. ${m.income.toLocaleString('en-IN')}`],
-                                ['Expenses', `Rs. ${m.expenses.toLocaleString('en-IN')}`],
-                                ['Balance', `Rs. ${m.balance.toLocaleString('en-IN')}`]
-                            ],
-                            theme: 'grid',
-                            headStyles: { fillColor: [79, 70, 229], textColor: 255, fontStyle: 'bold' },
-                            styles: { fontSize: 10, cellPadding: 6 },
-                            margin: { left, right }
-                        });
-                        y = doc.lastAutoTable.finalY + 20;
+                        y += 15;
 
                         if (m.incomeTransactions.length > 0) {
-                            if (y > pageHeight - 60) { doc.addPage(); y = 50; }
-                            
-                            doc.setFontSize(12);
-                            doc.setTextColor(16, 185, 129); 
-                            doc.text('Income History', left, y);
-                            y += 10;
-
-                            const incomeRows = m.incomeTransactions.sort((a,b) => b.timestamp - a.timestamp).map(t => [
-                                t.date, t.category, t.description, `Rs. ${t.amount.toLocaleString('en-IN')}`
-                            ]);
-
                             doc.autoTable({
                                 startY: y,
-                                head: [['Date', 'Category', 'Description', 'Amount']],
-                                body: incomeRows,
+                                head: [['Income Source', 'Amount']],
+                                body: m.incomeTransactions.map(t => [t.category, `Rs. ${t.amount.toLocaleString('en-IN')}`]),
                                 theme: 'striped',
-                                headStyles: { fillColor: [16, 185, 129], textColor: 255 },
-                                styles: { fontSize: 9 },
-                                columnStyles: { 0: { cellWidth: 60 }, 1: { cellWidth: 100 }, 3: { halign: 'right', fontStyle: 'bold' } },
+                                headStyles: { fillColor: [16, 185, 129] },
                                 margin: { left, right }
                             });
-                            y = doc.lastAutoTable.finalY + 20;
+                            y = doc.lastAutoTable.finalY + 15;
                         }
 
                         if (m.expenseTransactions.length > 0) {
-                            if (y > pageHeight - 60) { doc.addPage(); y = 50; }
-                            
-                            doc.setFontSize(12);
-                            doc.setTextColor(225, 29, 72); 
-                            doc.text('Expense History', left, y);
-                            y += 10;
-
-                            const expenseRows = m.expenseTransactions.sort((a,b) => b.timestamp - a.timestamp).map(t => [
-                                t.date, t.category, t.description, `Rs. ${t.amount.toLocaleString('en-IN')}`
-                            ]);
-
                             doc.autoTable({
                                 startY: y,
-                                head: [['Date', 'Category', 'Description', 'Amount']],
-                                body: expenseRows,
+                                head: [['Expense', 'Amount']],
+                                body: m.expenseTransactions.map(t => [t.category, `Rs. ${t.amount.toLocaleString('en-IN')}`]),
                                 theme: 'striped',
-                                headStyles: { fillColor: [225, 29, 72], textColor: 255 },
-                                styles: { fontSize: 9 },
-                                columnStyles: { 0: { cellWidth: 60 }, 1: { cellWidth: 100 }, 3: { halign: 'right', fontStyle: 'bold' } },
+                                headStyles: { fillColor: [244, 63, 94] },
                                 margin: { left, right }
                             });
-                            y = doc.lastAutoTable.finalY + 20;
-                        }
-
-                        if(idx < monthlyData.length - 1) {
-                            doc.setDrawColor(229, 231, 235);
-                            doc.line(left, y, pageWidth - right, y);
-                            y += 30;
+                            y = doc.lastAutoTable.finalY + 30;
                         }
                     });
 
-                    const pageCount = doc.internal.getNumberOfPages();
-                    for(let i = 1; i <= pageCount; i++) {
-                        doc.setPage(i);
-                        doc.setFontSize(8);
-                        doc.setTextColor(156, 163, 175);
-                        doc.text(`Page ${i} of ${pageCount}`, pageWidth/2, pageHeight - 15, {align:'center'});
-                    }
-
-                    doc.save(`Expense_Report_${new Date().toISOString().split('T')[0]}.pdf`);
+                    doc.save(`Financial_Sync_Report.pdf`);
                     addToast('Report generated successfully');
 
                 } catch (err) {
@@ -937,13 +948,13 @@
             if(tab === 'income') {
                 incForm.classList.remove('hidden');
                 expForm.classList.add('hidden');
-                tabInc.className = 'flex-1 py-4 text-sm font-semibold text-emerald-400 bg-emerald-500/10 border-b-2 border-emerald-500 transition-all';
-                tabExp.className = 'flex-1 py-4 text-sm font-semibold text-gray-400 hover:text-white hover:bg-white/5 transition-all border-b-2 border-transparent';
+                tabInc.className = 'flex-1 py-4 text-sm font-bold text-emerald-400 bg-emerald-500/10 border-b-2 border-emerald-500 transition-all';
+                tabExp.className = 'flex-1 py-4 text-sm font-bold text-gray-400 hover:text-white hover:bg-white/5 transition-all border-b-2 border-transparent';
             } else {
                 incForm.classList.add('hidden');
                 expForm.classList.remove('hidden');
-                tabExp.className = 'flex-1 py-4 text-sm font-semibold text-rose-400 bg-rose-500/10 border-b-2 border-rose-500 transition-all';
-                tabInc.className = 'flex-1 py-4 text-sm font-semibold text-gray-400 hover:text-white hover:bg-white/5 transition-all border-b-2 border-transparent';
+                tabExp.className = 'flex-1 py-4 text-sm font-bold text-rose-400 bg-rose-500/10 border-b-2 border-rose-500 transition-all';
+                tabInc.className = 'flex-1 py-4 text-sm font-bold text-gray-400 hover:text-white hover:bg-white/5 transition-all border-b-2 border-transparent';
             }
         }
 

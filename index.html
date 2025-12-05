@@ -7,7 +7,8 @@
     
     <!-- Libraries -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- FIX: Pointing to the UMD build to ensure global 'lucide' variable is available -->
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.6.0/jspdf.plugin.autotable.min.js"></script>
@@ -385,7 +386,7 @@
             el.className = `pointer-events-auto glass-panel border ${border} backdrop-blur-md text-white px-4 py-3 rounded-xl shadow-xl flex items-center gap-3 animate-slide-up`;
             el.innerHTML = `<i data-lucide="${icon}" class="w-4 h-4 ${color}"></i><span class="text-sm font-medium">${message}</span>`;
             container.appendChild(el);
-            lucide.createIcons();
+            if(window.lucide) lucide.createIcons();
             setTimeout(() => {
                 el.style.opacity = '0';
                 el.style.transform = 'translateY(-10px)';
@@ -435,7 +436,7 @@
                 this.setDefaultDates();
                 this.updateMonthDisplay();
                 this.updateAll();
-                lucide.createIcons();
+                if(window.lucide) lucide.createIcons();
             }
 
             setDefaultDates() {
@@ -512,7 +513,7 @@
                     type: type, 
                     category: category,
                     amount: amount, 
-                    description: description || 'No description', 
+                    description: description || '', // CHANGED: Empty string if no description
                     date: d.toLocaleDateString('en-IN'), 
                     timestamp: d.getTime() 
                 };
@@ -530,7 +531,7 @@
                 this.updateSummary(); 
                 this.renderTransactions(); 
                 this.updateChart(); 
-                lucide.createIcons();
+                if(window.lucide) lucide.createIcons();
             }
 
             updateSummary() {
@@ -904,8 +905,12 @@
                         if (m.incomeTransactions.length > 0) {
                             doc.autoTable({
                                 startY: y,
-                                head: [['Income Source', 'Amount']],
-                                body: m.incomeTransactions.map(t => [t.category, `Rs. ${t.amount.toLocaleString('en-IN')}`]),
+                                head: [['Income Source', 'Description', 'Amount']], // UPDATED: Added Description
+                                body: m.incomeTransactions.map(t => [
+                                    t.category, 
+                                    t.description || '', // UPDATED: Show description or blank
+                                    `Rs. ${t.amount.toLocaleString('en-IN')}`
+                                ]),
                                 theme: 'striped',
                                 headStyles: { fillColor: [16, 185, 129] },
                                 margin: { left, right }
@@ -916,8 +921,12 @@
                         if (m.expenseTransactions.length > 0) {
                             doc.autoTable({
                                 startY: y,
-                                head: [['Expense', 'Amount']],
-                                body: m.expenseTransactions.map(t => [t.category, `Rs. ${t.amount.toLocaleString('en-IN')}`]),
+                                head: [['Expense', 'Description', 'Amount']], // UPDATED: Added Description
+                                body: m.expenseTransactions.map(t => [
+                                    t.category, 
+                                    t.description || '', // UPDATED: Show description or blank
+                                    `Rs. ${t.amount.toLocaleString('en-IN')}`
+                                ]),
                                 theme: 'striped',
                                 headStyles: { fillColor: [244, 63, 94] },
                                 margin: { left, right }

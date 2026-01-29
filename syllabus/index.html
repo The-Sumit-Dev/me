@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CBSE Class 9 Tracker</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <script src="https://unpkg.com/lucide@latest"></script>
+    
+    <link rel="stylesheet" href="style.css">
+</head>
+<body class="bg-slate-50 font-sans pb-20 md:pb-10 text-gray-800">
+
+    <header class="bg-white border-b border-gray-200 sticky top-0 z-10">
+        <div class="max-w-5xl mx-auto px-4 h-16 flex items-center justify-between">
+            <div class="flex items-center gap-2">
+                <i data-lucide="backpack" class="w-6 h-6 text-indigo-600"></i>
+                <h1 class="text-xl font-bold text-gray-900 tracking-tight">Class 9 Tracker <span class="text-xs font-normal text-gray-500 ml-1">CBSE</span></h1>
+            </div>
+            
+            <button onclick="app.resetProgress()" class="text-sm text-gray-500 hover:text-red-500 flex items-center gap-1 transition-colors" title="Reset all progress">
+                <i data-lucide="rotate-ccw" class="w-4 h-4"></i>
+                <span class="hidden sm:inline">Reset</span>
+            </button>
+        </div>
+    </header>
+
+    <main class="max-w-5xl mx-auto px-4 py-8">
+        
+        <div id="tabs-container" class="flex gap-2 overflow-x-auto pb-4 mb-4 scrollbar-hide">
+            </div>
+
+        <div id="app-content">
+            </div>
+
+    </main>
+
+    <script src="script.js"></script>
+</body>
+</html>

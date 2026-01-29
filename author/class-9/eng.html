@@ -1,0 +1,761 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AuthorRecall Elite | NCERT Class 9</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
+
+        :root {
+            --brand: #4f46e5;
+            --brand-light: #eef2ff;
+            --surface: #ffffff;
+            --bg: #fdfdfd;
+        }
+
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: var(--bg);
+            color: #1e293b;
+            background-image: radial-gradient(#e2e8f0 0.5px, transparent 0.5px);
+            background-size: 24px 24px;
+        }
+
+        .card-flip { perspective: 2000px; }
+        .card-inner {
+            transition: transform 0.6s cubic-bezier(0.23, 1, 0.32, 1);
+            transform-style: preserve-3d;
+            cursor: pointer;
+            position: relative;
+        }
+        .card-inner.is-flipped { transform: rotateY(180deg); }
+        .card-front, .card-back {
+            -webkit-backface-visibility: hidden;
+            backface-visibility: hidden;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            border-radius: 1.5rem;
+            padding: 2rem;
+            min-height: 220px;
+            box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.08);
+            border: 1px solid #f1f5f9;
+            transition: all 0.3s ease;
+        }
+        .card-front { background: #ffffff; }
+        .card-inner:hover .card-front {
+            transform: translateY(-8px);
+            box-shadow: 0 20px 40px -15px rgba(79, 70, 229, 0.15);
+            border-color: #e0e7ff;
+        }
+        .card-back {
+            background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+            color: white;
+            transform: rotateY(180deg);
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+        }
+        .test-backdrop {
+            background: rgba(255, 255, 255, 0.98);
+            backdrop-filter: blur(12px);
+        }
+        @keyframes popIn {
+            from { opacity: 0; transform: scale(0.9) translateY(10px); }
+            to { opacity: 1; transform: scale(1) translateY(0); }
+        }
+        .mastered-badge { background: #ecfdf5; color: #059669; border: 1px solid #d1fae5; }
+        .is-mastered-card .card-front { background: #f8fafc; border-color: #10b981; }
+        .progress-fill { transition: width 1s cubic-bezier(0.34, 1.56, 0.64, 1); }
+        .sidebar-glass { background: rgba(255, 255, 255, 0.7); backdrop-filter: blur(10px); border-right: 1px solid #f1f5f9; }
+
+        .quiz-option {
+            transition: all 0.3s cubic-bezier(0.23, 1, 0.32, 1);
+        }
+        .quiz-option:not(.disabled):hover {
+            transform: scale(1.02);
+            border-color: var(--brand);
+            background-color: var(--brand-light);
+            box-shadow: 0 10px 20px -5px rgba(79, 70, 229, 0.1);
+        }
+        .quiz-option.correct {
+            background-color: #10b981 !important;
+            border-color: #059669 !important;
+            color: white !important;
+            box-shadow: 0 10px 20px -5px rgba(16, 185, 129, 0.3);
+        }
+        .quiz-option.incorrect {
+            background-color: #ef4444 !important;
+            border-color: #dc2626 !important;
+            color: white !important;
+            box-shadow: 0 10px 20px -5px rgba(239, 68, 68, 0.3);
+        }
+
+        .bar { transition: height 1s ease-out; }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col">
+
+    <nav class="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-slate-100 px-6 h-16 flex items-center justify-between">
+        <div class="flex items-center gap-3">
+            <div class="w-9 h-9 bg-indigo-600 rounded-xl flex items-center justify-center shadow-lg shadow-indigo-200">
+                <i class="fas fa-layer-group text-white text-sm"></i>
+            </div>
+            <h1 class="text-lg font-extrabold tracking-tight text-slate-800">AuthorRecall <span class="text-indigo-600">Elite</span></h1>
+        </div>
+
+        <div class="flex items-center gap-6">
+            <div class="hidden md:flex flex-col items-end">
+                <div class="flex items-center gap-2 mb-1">
+                    <span class="text-[9px] font-black uppercase tracking-[0.2em] text-slate-400">Total Mastery</span>
+                    <span id="mastery-percent" class="text-xs font-bold text-indigo-600">0%</span>
+                </div>
+                <div class="w-32 h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                    <div id="global-progress" class="h-full bg-indigo-600 progress-fill" style="width: 0%"></div>
+                </div>
+            </div>
+            <div class="flex items-center gap-4">
+                <div class="flex items-center gap-2 px-3 py-1.5 bg-amber-50 rounded-full border border-amber-100">
+                    <i class="fas fa-bolt text-amber-500"></i>
+                    <span id="streak-count" class="text-sm font-black text-amber-700">0</span>
+                </div>
+                <button onclick="confirmReset()" class="w-8 h-8 rounded-full hover:bg-slate-100 flex items-center justify-center text-slate-400 transition-colors">
+                    <i class="fas fa-redo-alt text-xs"></i>
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <div class="flex-1 flex flex-col lg:flex-row">
+        <aside class="lg:w-80 sidebar-glass p-6 space-y-8 h-auto lg:h-[calc(100vh-4rem)] lg:sticky lg:top-16">
+            <div class="space-y-6">
+                <div class="relative group">
+                    <i class="fas fa-search absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-indigo-500 transition-colors"></i>
+                    <input type="text" id="search-box" oninput="handleSearch()" placeholder="Quick search..." 
+                           class="w-full bg-white border border-slate-200 rounded-2xl py-3 pl-11 pr-4 text-sm focus:outline-none focus:ring-4 focus:ring-indigo-500/5 focus:border-indigo-500 transition-all">
+                </div>
+
+                <div>
+                    <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 block">Textbook</label>
+                    <div class="grid grid-cols-2 gap-2">
+                        <button onclick="changeBook('beehive')" id="btn-beehive" class="book-btn p-3 rounded-2xl border-2 transition-all font-bold text-sm flex flex-col items-center gap-2 border-indigo-600 bg-indigo-50 text-indigo-700">
+                            <i class="fas fa-book-open"></i> Beehive
+                        </button>
+                        <button onclick="changeBook('moments')" id="btn-moments" class="book-btn p-3 rounded-2xl border-2 transition-all font-bold text-sm flex flex-col items-center gap-2 border-slate-100 text-slate-400 hover:bg-slate-50">
+                            <i class="fas fa-bookmark"></i> Moments
+                        </button>
+                        <button onclick="changeBook('all')" id="btn-all" class="book-btn col-span-2 p-3 rounded-2xl border-2 transition-all font-bold text-sm flex items-center justify-center gap-3 border-slate-100 text-slate-400 hover:bg-slate-50">
+                            <i class="fas fa-globe"></i> All Books Together
+                        </button>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 block">Filter Type</label>
+                    <div class="flex flex-wrap gap-2">
+                        <button onclick="setFilter('all')" id="filter-all" class="filter-btn px-4 py-2 rounded-xl text-[11px] font-extrabold uppercase transition-all bg-indigo-600 text-white shadow-md shadow-indigo-100">All</button>
+                        <button onclick="setFilter('prose')" id="filter-prose" class="filter-btn px-4 py-2 rounded-xl text-[11px] font-extrabold uppercase transition-all bg-white text-slate-400 border border-slate-100 hover:bg-slate-50">Prose</button>
+                        <button onclick="setFilter('poetry')" id="filter-poetry" class="filter-btn px-4 py-2 rounded-xl text-[11px] font-extrabold uppercase transition-all bg-white text-slate-400 border border-slate-100 hover:bg-slate-50">Poetry</button>
+                    </div>
+                </div>
+
+                <div class="pt-4 space-y-3">
+                    <button onclick="startTestMode('recall')" class="w-full bg-slate-900 text-white py-4 rounded-2xl font-bold flex items-center justify-center gap-3 hover:bg-indigo-600 transition-all shadow-xl shadow-slate-200 active:scale-95">
+                        <i class="fas fa-bolt text-xs"></i> Recall Test (Flashcard)
+                    </button>
+                    <button onclick="startTestMode('quiz')" class="w-full bg-indigo-600 text-white py-4 rounded-2xl font-bold flex items-center justify-center gap-3 hover:bg-indigo-700 transition-all shadow-xl shadow-indigo-200 active:scale-95">
+                        <i class="fas fa-list-check text-xs"></i> Quiz Test (MCQ)
+                    </button>
+                </div>
+            </div>
+
+            <div class="bg-indigo-50 rounded-3xl p-5 border border-indigo-100">
+                <h4 class="text-xs font-black text-indigo-900 uppercase tracking-widest mb-4">Stats</h4>
+                <div class="space-y-4">
+                    <div class="flex items-center justify-between">
+                        <span class="text-xs font-bold text-indigo-600/70">Mastered</span>
+                        <span id="stat-mastered" class="text-sm font-black text-indigo-900">0</span>
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <span class="text-xs font-bold text-indigo-600/70">Revealed</span>
+                        <span id="stat-revealed" class="text-sm font-black text-indigo-900">0</span>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <main class="flex-1 p-6 lg:p-10">
+            <!-- Library View -->
+            <div id="study-view" class="space-y-8">
+                <div class="flex flex-col md:flex-row md:items-end justify-between gap-4">
+                    <div>
+                        <h2 id="view-title" class="text-4xl font-black text-slate-900">Beehive</h2>
+                        <p class="text-slate-400 font-medium mt-1 tracking-tight">Browse your chapters and reveal authors at your own pace.</p>
+                    </div>
+                    <div id="item-count" class="text-xs font-black bg-white border border-slate-200 px-4 py-2 rounded-full text-slate-500 uppercase tracking-widest">
+                        0 Chapters
+                    </div>
+                </div>
+                <div id="chapter-grid" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6"></div>
+            </div>
+
+            <!-- Recall Test Overlay -->
+            <div id="test-view" class="hidden fixed inset-0 z-[60] test-backdrop flex items-center justify-center p-6">
+                <div class="absolute top-6 left-6 flex items-center gap-4">
+                    <button onclick="exitTestMode()" class="px-6 py-2 bg-slate-900 text-white rounded-full font-bold text-sm shadow-lg hover:bg-slate-800 transition-all flex items-center gap-2">
+                        <i class="fas fa-arrow-left"></i> Exit Test
+                    </button>
+                </div>
+
+                <div class="max-w-lg w-full flex flex-col items-center text-center space-y-8">
+                    <div class="space-y-2">
+                        <span class="text-xs font-black text-indigo-600 uppercase tracking-[0.3em]" id="test-cycle-status">Recall Mode</span>
+                        <h3 class="text-4xl font-black text-slate-900 tracking-tight">Who's the Author?</h3>
+                    </div>
+
+                    <div id="test-card-container" class="w-full"></div>
+
+                    <div class="flex items-center gap-4 w-full justify-center">
+                        <button onclick="undoLastChapter()" id="undo-btn" class="flex-1 max-w-[120px] bg-white border border-slate-200 py-3 rounded-2xl font-bold text-slate-400 hover:text-slate-800 transition-all disabled:opacity-30" disabled>
+                            <i class="fas fa-undo-alt mr-2"></i> Previous
+                        </button>
+                        <div id="test-timer-status" class="flex-1 font-bold text-indigo-600 italic text-sm min-w-[150px]"></div>
+                        <button onclick="nextTestItem()" class="flex-1 max-w-[120px] bg-indigo-50 text-indigo-600 py-3 rounded-2xl font-bold hover:bg-indigo-100 transition-all">
+                            Next <i class="fas fa-chevron-right ml-2"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quiz MCQ Overlay -->
+            <div id="quiz-view" class="hidden fixed inset-0 z-[60] test-backdrop flex flex-col items-center p-6 overflow-y-auto">
+                <!-- Quiz Progress -->
+                <div class="w-full max-w-3xl mt-2 mb-10 flex flex-col gap-2">
+                    <div class="flex justify-between items-center text-[10px] font-black uppercase tracking-widest text-slate-400">
+                        <span id="quiz-progress-label">Question 0/0</span>
+                        <span id="quiz-progress-percent">0%</span>
+                    </div>
+                    <div class="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                        <div id="quiz-progress-bar" class="h-full bg-indigo-600 progress-fill" style="width: 0%"></div>
+                    </div>
+                </div>
+
+                <div class="absolute top-6 left-6 flex items-center gap-4">
+                    <button onclick="exitTestMode()" class="px-6 py-2 bg-slate-900 text-white rounded-full font-bold text-sm shadow-lg hover:bg-slate-800 transition-all flex items-center gap-2">
+                        <i class="fas fa-arrow-left"></i> Exit Quiz
+                    </button>
+                </div>
+
+                <div class="max-w-3xl w-full flex flex-col items-center text-center space-y-8 pb-10">
+                    <div class="w-full bg-white p-8 md:p-12 rounded-[2rem] shadow-xl shadow-slate-200/50 border border-slate-100 space-y-4 animate-pop">
+                        <div class="inline-block px-3 py-1 bg-indigo-50 text-indigo-600 rounded-full text-[10px] font-black uppercase tracking-widest mb-2">Identify Author</div>
+                        <h2 class="text-xl md:text-2xl font-medium text-slate-400">Who is the creator of the work titled</h2>
+                        <h3 id="quiz-chapter-name" class="text-3xl md:text-5xl font-black text-slate-900 tracking-tight leading-tight">Chapter Name</h3>
+                    </div>
+
+                    <div id="quiz-options-grid" class="grid grid-cols-1 md:grid-cols-2 gap-4 w-full">
+                        <!-- Options injected here -->
+                    </div>
+
+                    <div id="quiz-feedback" class="h-10 flex items-center justify-center font-bold text-xl"></div>
+                </div>
+            </div>
+
+            <!-- Quiz Results Graph Overlay -->
+            <div id="results-view" class="hidden fixed inset-0 z-[70] test-backdrop flex items-center justify-center p-6">
+                 <div class="max-w-2xl w-full bg-white rounded-[2.5rem] p-10 shadow-2xl border border-slate-100 text-center space-y-8 animate-pop">
+                    <div class="bg-indigo-600 w-20 h-20 rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-xl shadow-indigo-200">
+                        <i class="fas fa-chart-bar text-3xl text-white"></i>
+                    </div>
+                    <div>
+                        <h2 class="text-3xl font-black text-slate-900">Cycle Complete!</h2>
+                        <p class="text-slate-500">Here is how you performed this attempt.</p>
+                    </div>
+
+                    <div class="flex justify-center items-end gap-12 h-64 border-b border-slate-100 pb-4">
+                        <div class="flex flex-col items-center gap-4 flex-1">
+                            <div class="text-xs font-black text-slate-400 uppercase tracking-widest">Previous Best</div>
+                            <div id="old-score-bar" class="w-16 bg-slate-100 rounded-t-2xl bar relative overflow-hidden" style="height: 0%">
+                                <div class="absolute inset-0 bg-slate-200 opacity-50"></div>
+                            </div>
+                            <div id="old-score-text" class="font-bold text-slate-400">0/0</div>
+                        </div>
+                        <div class="flex flex-col items-center gap-4 flex-1">
+                            <div class="text-xs font-black text-indigo-600 uppercase tracking-widest">Current Attempt</div>
+                            <div id="new-score-bar" class="w-16 bg-indigo-600 rounded-t-2xl bar shadow-lg shadow-indigo-100" style="height: 0%"></div>
+                            <div id="new-score-text" class="font-bold text-indigo-600">0/0</div>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4">
+                        <button onclick="exitTestMode()" class="py-4 bg-slate-50 text-slate-600 rounded-2xl font-bold hover:bg-slate-100 transition-all">
+                            Back to Library
+                        </button>
+                        <button onclick="restartQuizCycle()" class="py-4 bg-indigo-600 text-white rounded-2xl font-bold shadow-lg shadow-indigo-200 hover:bg-indigo-700 transition-all">
+                            Retake Quiz
+                        </button>
+                    </div>
+                 </div>
+            </div>
+
+            <!-- Empty State -->
+            <div id="empty-state" class="hidden flex flex-col items-center justify-center py-40 text-center space-y-4">
+                <div class="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center text-slate-200">
+                    <i class="fas fa-folder-open text-4xl"></i>
+                </div>
+                <h3 class="text-xl font-bold text-slate-800">No chapters found</h3>
+                <p class="text-slate-400 max-w-xs">Adjust your search or filters.</p>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        const chapterData = {
+            beehive: [
+                { id: 1, title: "The Fun They Had", author: "Isaac Asimov", type: "prose" },
+                { id: 2, title: "The Road Not Taken", author: "Robert Frost", type: "poetry" },
+                { id: 3, title: "The Sound of Music", author: "Deborah Cowley", type: "prose" },
+                { id: 4, title: "Wind", author: "Subramania Bharati", type: "poetry" },
+                { id: 5, title: "The Little Girl", author: "Katherine Mansfield", type: "prose" },
+                { id: 6, title: "Rain on the Roof", author: "Coates Kinney", type: "poetry" },
+                { id: 7, title: "A Truly Beautiful Mind", author: "Biographical", type: "prose" },
+                { id: 8, title: "The Lake Isle of Innisfree", author: "W.B. Yeats", type: "poetry" },
+                { id: 9, title: "The Snake and the Mirror", author: "V.M. Basheer", type: "prose" },
+                { id: 10, title: "A Legend of the Northland", author: "Phoebe Cary", type: "poetry" },
+                { id: 11, title: "My Childhood", author: "A.P.J. Abdul Kalam", type: "prose" },
+                { id: 12, title: "No Men Are Foreign", author: "James Kirkup", type: "poetry" },
+                { id: 13, title: "Reach for the Top", author: "Santosh Yadav", type: "prose" },
+                { id: 14, title: "On Killing a Tree", author: "Gieve Patel", type: "poetry" },
+                { id: 15, title: "Kathmandu", author: "Vikram Seth", type: "prose" },
+                { id: 16, title: "A Slumber Did My Spirit Seal", author: "William Wordsworth", type: "poetry" },
+                { id: 17, title: "If I Were You", author: "Douglas James", type: "prose" }
+            ],
+            moments: [
+                { id: 101, title: "The Lost Child", author: "Mulk Raj Anand", type: "prose" },
+                { id: 102, title: "The Adventures of Toto", author: "Ruskin Bond", type: "prose" },
+                { id: 103, title: "Iswaran the Storyteller", author: "R.K. Laxman", type: "prose" },
+                { id: 104, title: "In the Kingdom of Fools", author: "Kannada Folktale", type: "prose" },
+                { id: 105, title: "The Happy Prince", author: "Oscar Wilde", type: "prose" },
+                { id: 106, title: "Weathering Storm in Ersama", author: "Harsh Mander", type: "prose" },
+                { id: 107, title: "The Last Leaf", author: "O. Henry", type: "prose" },
+                { id: 108, title: "A House is Not a Home", author: "Zan Gaudioso", type: "prose" },
+                { id: 109, title: "The Beggar", author: "Anton Chekhov", type: "prose" }
+            ]
+        };
+
+        // Persistent Session State
+        let currentBook = 'beehive';
+        let currentFilter = 'all';
+        let searchQuery = '';
+        let masteredIds = new Set();
+        let revealedIds = new Set();
+        let streak = 0;
+        let isTestMode = false;
+        let testModeType = 'recall'; 
+
+        // Quiz Logic State
+        let testHistory = [];
+        let testHistoryIndex = -1;
+        let currentTestPool = [];
+        let autoAdvanceTimer = null;
+
+        // Results Tracking
+        let lastQuizScore = 0;
+        let lastQuizTotal = 0;
+        let currentCycleCorrect = 0;
+        let currentCycleTotal = 0;
+
+        // Sound Synthesis Engine
+        function playAudioFeedback(type) {
+            const context = new (window.AudioContext || window.webkitAudioContext)();
+            const oscillator = context.createOscillator();
+            const gainNode = context.createGain();
+
+            oscillator.connect(gainNode);
+            gainNode.connect(context.destination);
+
+            const now = context.currentTime;
+
+            if (type === 'success') {
+                oscillator.type = 'sine';
+                oscillator.frequency.setValueAtTime(523.25, now); 
+                oscillator.frequency.exponentialRampToValueAtTime(880.00, now + 0.1); 
+                gainNode.gain.setValueAtTime(0.15, now);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.4);
+            } else if (type === 'error') {
+                oscillator.type = 'triangle';
+                oscillator.frequency.setValueAtTime(220.00, now); 
+                oscillator.frequency.exponentialRampToValueAtTime(110.00, now + 0.2); 
+                gainNode.gain.setValueAtTime(0.15, now);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.5);
+            } else if (type === 'click') {
+                oscillator.type = 'sine';
+                oscillator.frequency.setValueAtTime(660, now);
+                gainNode.gain.setValueAtTime(0.03, now);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
+            }
+
+            oscillator.start();
+            oscillator.stop(now + 0.6);
+        }
+
+        function renderGrid() {
+            const grid = document.getElementById('chapter-grid');
+            const empty = document.getElementById('empty-state');
+            const items = getFilteredItems();
+            grid.innerHTML = '';
+            document.getElementById('item-count').innerText = `${items.length} Chapters`;
+            if (items.length === 0) { grid.classList.add('hidden'); empty.classList.remove('hidden'); }
+            else { grid.classList.remove('hidden'); empty.classList.add('hidden'); items.forEach((item, idx) => grid.appendChild(createCard(item, false, idx * 30))); }
+            updateUIStats();
+        }
+
+        function getFilteredItems() {
+            let baseItems = currentBook === 'all' ? [...chapterData.beehive, ...chapterData.moments] : chapterData[currentBook];
+            return baseItems.filter(item => {
+                const matchesFilter = currentFilter === 'all' || item.type === currentFilter;
+                const matchesSearch = item.title.toLowerCase().includes(searchQuery.toLowerCase());
+                return matchesFilter && matchesSearch;
+            });
+        }
+
+        function createCard(item, isLarge = false, delay = 0, forceUnflipped = false) {
+            const isMastered = masteredIds.has(item.id);
+            const isRevealed = forceUnflipped ? false : revealedIds.has(item.id);
+            const card = document.createElement('div');
+            card.className = `card-flip w-full ${isLarge ? 'h-[350px]' : 'h-[220px]'} ${isMastered ? 'is-mastered-card' : ''}`;
+            card.style.animation = `popIn 0.5s ease backwards ${delay}ms`;
+            card.innerHTML = `
+                <div class="card-inner w-full h-full ${isRevealed ? 'is-flipped' : ''}" onclick="flipCard(this, ${JSON.stringify(item).replace(/"/g, '&quot;')}, ${isLarge})">
+                    <div class="card-front">
+                        <div class="flex items-center justify-between w-full mb-auto">
+                            <span class="text-[10px] font-black uppercase tracking-widest px-2.5 py-1 rounded-lg ${item.type === 'prose' ? 'bg-indigo-50 text-indigo-600' : 'bg-purple-50 text-purple-600'}">
+                                ${item.type}
+                            </span>
+                            ${isMastered ? '<div class="mastered-badge px-2 py-0.5 rounded text-[10px] font-bold"><i class="fas fa-crown"></i></div>' : ''}
+                        </div>
+                        <h3 class="${isLarge ? 'text-3xl' : 'text-xl'} font-extrabold text-center px-4 tracking-tight">${item.title}</h3>
+                        <div class="mt-auto flex items-center gap-2 text-[10px] font-black text-slate-300 uppercase tracking-widest">
+                            <span>Reveal Author</span>
+                            <i class="fas fa-arrow-right"></i>
+                        </div>
+                    </div>
+                    <div class="card-back">
+                        <div class="mb-auto text-[10px] font-black uppercase tracking-widest opacity-60">Created by</div>
+                        <div class="${isLarge ? 'text-4xl' : 'text-2xl'} font-black text-center px-4 leading-tight">${item.author}</div>
+                        <div class="mt-auto w-full flex gap-2">
+                            <button onclick="toggleMastery(event, ${item.id})" class="flex-1 bg-white/20 hover:bg-white/30 backdrop-blur-md py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all">
+                                ${isMastered ? 'Undo Mastery' : 'Mastered'}
+                            </button>
+                        </div>
+                    </div>
+                </div>`;
+            return card;
+        }
+
+        function flipCard(el, item, isLarge) {
+            const wasFlipped = el.classList.contains('is-flipped');
+            
+            // In Test Mode (Recall), allow un-flipping by the user, but don't re-trigger streak
+            playAudioFeedback('click');
+            el.classList.toggle('is-flipped');
+            
+            if (!wasFlipped) {
+                revealedIds.add(item.id);
+                updateUIStats();
+                if (isTestMode && isLarge && testModeType === 'recall') {
+                    streak++;
+                    document.getElementById('streak-count').innerText = streak;
+                    document.getElementById('test-timer-status').innerHTML = '<i class="fas fa-magic fa-spin mr-2"></i> Auto-next in 2s...';
+                    if (autoAdvanceTimer) clearTimeout(autoAdvanceTimer);
+                    autoAdvanceTimer = setTimeout(() => { if (isTestMode) nextTestItem(); }, 2000);
+                }
+            } else {
+                if (isTestMode && isLarge && autoAdvanceTimer) {
+                    clearTimeout(autoAdvanceTimer);
+                    document.getElementById('test-timer-status').innerHTML = '<span class="text-slate-400">Manual review...</span>';
+                }
+            }
+        }
+
+        function toggleMastery(e, id) {
+            e.stopPropagation();
+            playAudioFeedback('click');
+            if (masteredIds.has(id)) masteredIds.delete(id);
+            else { 
+                masteredIds.add(id); 
+                if (!isTestMode) confetti({ particleCount: 50, spread: 60, origin: { y: 0.8 }, colors: ['#4f46e5', '#10b981'] }); 
+            }
+            updateUIStats();
+            if (!isTestMode) renderGrid();
+        }
+
+        function updateUIStats() {
+            const total = chapterData.beehive.length + chapterData.moments.length;
+            const mastered = masteredIds.size;
+            const percent = Math.round((mastered / total) * 100);
+            document.getElementById('mastery-percent').innerText = `${percent}%`;
+            document.getElementById('stat-mastered').innerText = mastered;
+            document.getElementById('stat-revealed').innerText = revealedIds.size;
+            document.getElementById('global-progress').style.width = `${percent}%`;
+        }
+
+        function shuffle(array) {
+            const arr = [...array];
+            for (let i = arr.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [arr[i], arr[j]] = [arr[j], arr[i]];
+            }
+            return arr;
+        }
+
+        function startTestMode(type) {
+            const list = getFilteredItems();
+            if (list.length === 0) return;
+            
+            isTestMode = true;
+            testModeType = type;
+            streak = 0;
+            currentCycleCorrect = 0;
+            currentCycleTotal = list.length;
+            testHistory = [];
+            testHistoryIndex = -1;
+            currentTestPool = shuffle(list);
+            
+            document.getElementById('test-view').classList.add('hidden');
+            document.getElementById('quiz-view').classList.add('hidden');
+            document.getElementById('results-view').classList.add('hidden');
+            
+            if (type === 'recall') {
+                document.getElementById('test-view').classList.remove('hidden');
+            } else {
+                document.getElementById('quiz-view').classList.remove('hidden');
+            }
+            
+            nextTestItem();
+        }
+
+        function exitTestMode() {
+            isTestMode = false;
+            if (autoAdvanceTimer) clearTimeout(autoAdvanceTimer);
+            document.getElementById('test-view').classList.add('hidden');
+            document.getElementById('quiz-view').classList.add('hidden');
+            document.getElementById('results-view').classList.add('hidden');
+            renderGrid();
+        }
+
+        function nextTestItem() {
+            const list = getFilteredItems();
+            if (list.length === 0) return exitTestMode();
+            
+            if (autoAdvanceTimer) clearTimeout(autoAdvanceTimer);
+            
+            // History Navigation
+            if (testHistoryIndex < testHistory.length - 1) {
+                testHistoryIndex++;
+                const item = testHistory[testHistoryIndex];
+                if (testModeType === 'recall') renderRecallCard(item);
+                else renderQuizQuestion(item);
+                updateUndoButton();
+                return;
+            }
+
+            // Pool Draw Logic - Detect end of deck
+            if (currentTestPool.length === 0) {
+                if (testModeType === 'quiz') {
+                    showResults();
+                    return;
+                } else {
+                    currentTestPool = shuffle(list);
+                }
+            }
+
+            const nextItem = currentTestPool.pop();
+            testHistory.push(nextItem);
+            testHistoryIndex = testHistory.length - 1;
+            
+            if (testModeType === 'recall') renderRecallCard(nextItem);
+            else renderQuizQuestion(nextItem);
+            
+            updateUndoButton();
+        }
+
+        function renderRecallCard(item) {
+            document.getElementById('test-timer-status').innerText = '';
+            const container = document.getElementById('test-card-container');
+            container.innerHTML = '';
+            container.appendChild(createCard(item, true, 0, true));
+        }
+
+        function renderQuizQuestion(item) {
+            // Update Progress UI
+            const currentQ = testHistoryIndex + 1;
+            const totalQ = currentCycleTotal;
+            const pct = Math.round((currentQ / totalQ) * 100);
+            document.getElementById('quiz-progress-label').innerText = `Question ${currentQ} of ${totalQ}`;
+            document.getElementById('quiz-progress-percent').innerText = `${pct}%`;
+            document.getElementById('quiz-progress-bar').style.width = `${pct}%`;
+
+            const chapterEl = document.getElementById('quiz-chapter-name');
+            const gridEl = document.getElementById('quiz-options-grid');
+            const feedbackEl = document.getElementById('quiz-feedback');
+            
+            feedbackEl.innerText = '';
+            chapterEl.innerText = item.title;
+            gridEl.innerHTML = '';
+            
+            const pool = getFilteredItems();
+            const allAuthors = [...new Set(pool.map(i => i.author))];
+            const uniqueOthers = allAuthors.filter(a => a !== item.author);
+            const distractors = shuffle(uniqueOthers).slice(0, 3);
+            const options = shuffle([item.author, ...distractors]);
+            
+            options.forEach((option, idx) => {
+                const btn = document.createElement('button');
+                // Redesigned Card Style for Options
+                btn.className = "quiz-option bg-white border border-slate-100 p-8 rounded-3xl font-bold text-slate-700 text-lg shadow-sm flex items-center justify-between text-left group animate-pop";
+                btn.style.animationDelay = `${idx * 100}ms`;
+                
+                const initials = option.split(' ').map(n => n[0]).join('');
+                
+                btn.innerHTML = `
+                    <div class="flex items-center gap-4">
+                        <div class="w-10 h-10 rounded-full bg-slate-50 flex items-center justify-center text-[10px] font-black text-slate-400 group-hover:bg-indigo-50 group-hover:text-indigo-400 transition-colors">
+                            ${initials}
+                        </div>
+                        <span>${option}</span>
+                    </div>
+                    <i class="fas fa-chevron-right text-xs opacity-0 group-hover:opacity-100 transition-all -translate-x-2 group-hover:translate-x-0"></i>
+                `;
+                btn.onclick = () => handleQuizSelection(btn, option, item.author);
+                gridEl.appendChild(btn);
+            });
+        }
+
+        function handleQuizSelection(btn, selected, correct) {
+            const feedbackEl = document.getElementById('quiz-feedback');
+            const allButtons = document.querySelectorAll('.quiz-option');
+            
+            allButtons.forEach(b => b.classList.add('disabled', 'pointer-events-none'));
+            
+            if (selected === correct) {
+                playAudioFeedback('success');
+                btn.classList.add('correct');
+                feedbackEl.innerHTML = '<span class="text-emerald-500 font-black"><i class="fas fa-check-circle mr-2"></i> Excellent Recall!</span>';
+                streak++;
+                currentCycleCorrect++;
+                document.getElementById('streak-count').innerText = streak;
+                
+                confetti({ particleCount: 20, spread: 30, origin: { y: 0.8 }, colors: ['#10b981', '#ffffff'] });
+            } else {
+                playAudioFeedback('error');
+                btn.classList.add('incorrect');
+                feedbackEl.innerHTML = `<span class="text-red-500 font-bold"><i class="fas fa-times-circle mr-2"></i> Correct Answer: ${correct}</span>`;
+                streak = 0;
+                document.getElementById('streak-count').innerText = streak;
+                
+                allButtons.forEach(b => {
+                    const text = b.innerText.trim();
+                    if (text === correct) {
+                        b.classList.add('correct');
+                    }
+                });
+            }
+            
+            if (autoAdvanceTimer) clearTimeout(autoAdvanceTimer);
+            autoAdvanceTimer = setTimeout(() => {
+                if (isTestMode) nextTestItem();
+            }, 2000);
+        }
+
+        function showResults() {
+            document.getElementById('quiz-view').classList.add('hidden');
+            document.getElementById('results-view').classList.remove('hidden');
+
+            const oldScoreBar = document.getElementById('old-score-bar');
+            const newScoreBar = document.getElementById('new-score-bar');
+            const oldScoreText = document.getElementById('old-score-text');
+            const newScoreText = document.getElementById('new-score-text');
+
+            const newHeight = (currentCycleCorrect / currentCycleTotal) * 100;
+            const oldHeight = lastQuizTotal > 0 ? (lastQuizScore / lastQuizTotal) * 100 : 0;
+
+            setTimeout(() => {
+                newScoreBar.style.height = `${newHeight}%`;
+                oldScoreBar.style.height = `${oldHeight}%`;
+            }, 100);
+
+            newScoreText.innerText = `${currentCycleCorrect}/${currentCycleTotal}`;
+            oldScoreText.innerText = lastQuizTotal > 0 ? `${lastQuizScore}/${lastQuizTotal}` : "None";
+
+            if (currentCycleCorrect >= lastQuizScore) {
+                confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
+            }
+
+            lastQuizScore = currentCycleCorrect;
+            lastQuizTotal = currentCycleTotal;
+        }
+
+        function restartQuizCycle() {
+            startTestMode('quiz');
+        }
+
+        function undoLastChapter() {
+            if (testHistoryIndex <= 0) return;
+            if (autoAdvanceTimer) clearTimeout(autoAdvanceTimer);
+            testHistoryIndex--;
+            const item = testHistory[testHistoryIndex];
+            if (testModeType === 'recall') renderRecallCard(item);
+            else renderQuizQuestion(item);
+            updateUndoButton();
+        }
+
+        function updateUndoButton() {
+            const btn = document.getElementById('undo-btn');
+            if (btn) btn.disabled = testHistoryIndex <= 0;
+        }
+
+        function confirmReset() {
+            if (confirm("Reset everything?")) {
+                masteredIds.clear(); revealedIds.clear(); streak = 0;
+                lastQuizScore = 0; lastQuizTotal = 0;
+                document.getElementById('streak-count').innerText = "0";
+                updateUIStats();
+                if (isTestMode) exitTestMode(); else renderGrid();
+            }
+        }
+
+        function changeBook(book) {
+            currentBook = book;
+            document.querySelectorAll('.book-btn').forEach(btn => btn.className = "book-btn p-3 rounded-2xl border-2 transition-all font-bold text-sm flex flex-col items-center gap-2 border-slate-100 text-slate-400 hover:bg-slate-50");
+            const btnAll = document.getElementById('btn-all');
+            btnAll.className = "book-btn col-span-2 p-3 rounded-2xl border-2 transition-all font-bold text-sm flex items-center justify-center gap-3 border-slate-100 text-slate-400 hover:bg-slate-50";
+            if (book === 'all') btnAll.className = "book-btn col-span-2 p-3 rounded-2xl border-2 transition-all font-bold text-sm flex items-center justify-center gap-3 border-indigo-600 bg-indigo-50 text-indigo-700";
+            else document.getElementById(`btn-${book}`).className = "book-btn p-3 rounded-2xl border-2 transition-all font-bold text-sm flex flex-col items-center gap-2 border-indigo-600 bg-indigo-50 text-indigo-700";
+            document.getElementById('view-title').innerText = book === 'all' ? "All Books" : book.charAt(0).toUpperCase() + book.slice(1);
+            if (isTestMode) startTestMode(testModeType); else renderGrid();
+        }
+
+        function setFilter(f) {
+            currentFilter = f;
+            document.querySelectorAll('.filter-btn').forEach(btn => btn.className = "filter-btn px-4 py-2 rounded-xl text-[11px] font-extrabold uppercase transition-all bg-white text-slate-400 border border-slate-100 hover:bg-slate-50");
+            document.getElementById(`filter-${f}`).className = "filter-btn px-4 py-2 rounded-xl text-[11px] font-extrabold uppercase transition-all bg-indigo-600 text-white shadow-md shadow-indigo-100";
+            if (isTestMode) startTestMode(testModeType); else renderGrid();
+        }
+
+        function handleSearch() {
+            searchQuery = document.getElementById('search-box').value;
+            if (!isTestMode) renderGrid();
+        }
+
+        window.onload = renderGrid;
+        const style = document.createElement('style');
+        style.innerHTML = `@keyframes popIn { from { opacity: 0; transform: scale(0.9) translateY(10px); } to { opacity: 1; transform: scale(1) translateY(0); } }`;
+        document.head.appendChild(style);
+    </script>
+</body>
+</html>

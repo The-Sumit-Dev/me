@@ -1,0 +1,102 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+:root {
+    --primary: #6366f1;
+    --primary-dark: #4f46e5;
+    --success: #10b981;
+    --warning: #f59e0b;
+    --danger: #ef4444;
+    --bg: #f8fafc;
+}
+
+body {
+    font-family: 'Inter', sans-serif;
+    background-color: var(--bg);
+    color: #1e293b;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.glass-card {
+    background: rgba(255, 255, 255, 0.9);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.6);
+    box-shadow: 0 4px 24px -2px rgba(31, 38, 135, 0.04);
+    display: flex;
+    flex-direction: column;
+}
+
+.stat-card {
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@media (min-width: 1024px) {
+    .stat-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 12px 24px -8px rgba(99, 102, 241, 0.15);
+    }
+}
+
+.progress-ring {
+    transition: stroke-dashoffset 0.6s ease-in-out;
+    transform: rotate(-90deg);
+    transform-origin: 50% 50%;
+}
+
+.toggle-btn {
+    color: #64748b;
+    font-weight: 700;
+}
+
+.toggle-btn.active {
+    background-color: white;
+    color: #4f46e5;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(12px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fade-in {
+    animation: fadeIn 0.4s ease-out forwards;
+}
+
+.modal-overlay {
+    background: rgba(15, 23, 42, 0.4);
+    backdrop-filter: blur(8px);
+    display: none;
+    position: fixed;
+    inset: 0;
+    z-index: 100;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+}
+.modal-overlay.show {
+    display: flex;
+}
+
+.punishment-item {
+    transition: all 0.2s ease;
+    border-left: 4px solid transparent;
+}
+.punishment-item:not(.done) {
+    border-left-color: #ef4444;
+}
+.punishment-item.done {
+    opacity: 0.6;
+    background: #f1f5f9 !important;
+    border-left-color: #10b981;
+}
+.punishment-item.done p {
+    text-decoration: line-through;
+    color: #94a3b8;
+}
+
+/* Chart sizing fix */
+.chart-container {
+    position: relative;
+    height: 300px;
+    width: 100%;
+}

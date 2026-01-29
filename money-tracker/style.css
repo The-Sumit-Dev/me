@@ -1,0 +1,55 @@
+body {
+    background-color: #050507;
+    color: #e2e8f0;
+    overflow-x: hidden;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.bg-grid {
+    background-size: 50px 50px;
+    background-image: linear-gradient(to right, rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+                      linear-gradient(to bottom, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+    mask-image: radial-gradient(circle at center, black 40%, transparent 100%);
+}
+
+.glass-panel {
+    background: rgba(20, 20, 25, 0.6);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    box-shadow: 0 4px 30px rgba(0, 0, 0, 0.3);
+}
+
+.glass-input {
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: white;
+    transition: all 0.3s ease;
+}
+.glass-input:focus {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: rgba(139, 92, 246, 0.5);
+    outline: none;
+}
+
+select.glass-input option {
+    background-color: #101015;
+    color: white;
+}
+
+/* Scrollbar */
+.custom-scrollbar::-webkit-scrollbar { width: 6px; }
+.custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+.custom-scrollbar::-webkit-scrollbar-thumb { background: #3f3f46; border-radius: 10px; }
+.custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #71717a; }
+
+.btn-glow { position: relative; overflow: hidden; transition: all 0.3s ease; }
+.btn-glow:hover { box-shadow: 0 0 15px rgba(139, 92, 246, 0.3); transform: translateY(-1px); }
+
+/* Chart container */
+.chart-wrapper { position: relative; height: 250px; width: 100%; }
+
+/* Date Input Hack */
+input[type="date"]::-webkit-calendar-picker-indicator {
+    filter: invert(1); opacity: 0.6; cursor: pointer;
+}

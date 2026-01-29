@@ -2,14 +2,24 @@
 const addToast = (message, type = 'success') => {
     const container = document.getElementById('toastContainer');
     const el = document.createElement('div');
-    const color = type === 'success' ? 'text-emerald-400' : (type === 'error' ? 'text-rose-400' : 'text-blue-400');
-    const border = type === 'success' ? 'border-emerald-500/50' : (type === 'error' ? 'border-rose-500/50' : 'border-blue-500/50');
-    const icon = type === 'success' ? 'check-circle' : (type === 'error' ? 'alert-circle' : 'info');
     
-    el.className = `pointer-events-auto glass-panel border ${border} backdrop-blur-md text-white px-4 py-3 rounded-xl shadow-xl flex items-center gap-3 animate-slide-up`;
-    el.innerHTML = `<i data-lucide="${icon}" class="w-4 h-4 ${color}"></i><span class="text-sm font-medium">${message}</span>`;
+    // Clean Light Theme Toast
+    const bgClass = 'bg-white border-slate-100';
+    const textClass = type === 'success' ? 'text-emerald-600' : (type === 'error' ? 'text-rose-600' : 'text-blue-600');
+    const iconClass = type === 'success' ? 'bg-emerald-50 text-emerald-600' : (type === 'error' ? 'bg-rose-50 text-rose-600' : 'bg-blue-50 text-blue-600');
+    const iconName = type === 'success' ? 'check' : (type === 'error' ? 'alert-circle' : 'info');
+    
+    el.className = `pointer-events-auto ${bgClass} p-4 rounded-xl shadow-xl shadow-slate-200/50 border flex items-center gap-3 animate-slide-up min-w-[320px]`;
+    el.innerHTML = `
+        <div class="p-1.5 rounded-full ${iconClass} shrink-0">
+            <i data-lucide="${iconName}" class="w-4 h-4"></i>
+        </div>
+        <span class="text-sm font-semibold text-slate-700">${message}</span>
+    `;
+    
     container.appendChild(el);
     if(window.lucide) lucide.createIcons();
+    
     setTimeout(() => {
         el.style.opacity = '0';
         el.style.transform = 'translateY(-10px)';
@@ -20,17 +30,19 @@ const addToast = (message, type = 'success') => {
 // --- Logic Class ---
 class ExpenseTracker {
     constructor() {
-        this.storageKey = 'cyber_finance_v1';
+        this.storageKey = 'horizon_finance_v1';
         this.allTransactions = this.loadData();
         this.chart = null;
         this.deleteTransactionId = null;
         this.currentMonth = new Date().getMonth();
         this.currentYear = new Date().getFullYear();
+        
         this.categoryIcons = {
-            'Room Rent': '🏠', 'Rashan': '🍚', 'Food': '🍕', 'Transport': '🚌', 'Education': '📚',
-            'Books': '📖', 'Entertainment': '🎮', 'Mobile & Data': '📱', 'Others': '🔧', 
-            'Pocket Money': '💰', 'Borrow': '🤝', 'Savings': '💎'
+            'Room Rent': '🏠', 'Rashan': '🍚', 'Food': '🍔', 'Transport': '🚕', 'Education': '📚',
+            'Shopping': '🛍️', 'Entertainment': '🎬', 'Recharge': '📱', 'Others': '🔧', 
+            'Pocket Money': '💰', 'Borrow': '🤝', 'Savings': '💎', 'Salary': '💼', 'Gift': '🎁'
         };
+        
         this.monthNames = [
             'January','February','March','April','May','June',
             'July','August','September','October','November','December'
@@ -60,6 +72,9 @@ class ExpenseTracker {
         this.updateMonthDisplay();
         this.updateAll();
         if(window.lucide) lucide.createIcons();
+        
+        // Initial tab setup
+        switchTab('income');
     }
 
     setDefaultDates() {
@@ -90,11 +105,10 @@ class ExpenseTracker {
         monthDisplay.textContent = `${this.monthNames[this.currentMonth]} ${this.currentYear}`;
 
         const tx = this.getCurrentMonthTransactions();
-        if(tx.length === 0) monthStats.textContent = 'No transactions';
+        if(tx.length === 0) monthStats.textContent = 'NO TRANSACTIONS';
         else {
-            const inc = tx.filter(t=>t.type==='income').length;
-            const exp = tx.filter(t=>t.type==='expense').length;
-            monthStats.textContent = `${inc} Income • ${exp} Expenses`;
+            const count = tx.length;
+            monthStats.textContent = `${count} ENTRY${count !== 1 ? 'IES' : ''}`;
         }
     }
 
@@ -147,7 +161,9 @@ class ExpenseTracker {
         
         document.getElementById(formId).reset(); 
         this.setDefaultDates();
-        addToast(`${type === 'income' ? 'Income' : 'Expense'} added successfully`);
+        document.getElementById(catId).selectedIndex = 0;
+        
+        addToast(`${type === 'income' ? 'Income' : 'Expense'} recorded`);
     }
 
     updateAll() { 
@@ -170,19 +186,22 @@ class ExpenseTracker {
         const statusEl = document.getElementById('balanceStatus');
         
         if(balance > 0){
-            statusEl.textContent = 'Healthy';
-            statusEl.className = 'text-[10px] font-bold px-2 py-1 rounded-lg inline-block bg-emerald-500/20 text-emerald-300 border border-emerald-500/30';
+            statusEl.textContent = 'ON TRACK';
+            statusEl.className = 'text-[11px] font-bold px-3 py-1 rounded-full bg-emerald-100 text-emerald-700 uppercase tracking-wider';
         } else if(balance === 0){
-            statusEl.textContent = 'Balanced';
-            statusEl.className = 'text-[10px] font-bold px-2 py-1 rounded-lg inline-block bg-blue-500/20 text-blue-300 border border-blue-500/30';
+            statusEl.textContent = 'NEUTRAL';
+            statusEl.className = 'text-[11px] font-bold px-3 py-1 rounded-full bg-slate-100 text-slate-500 uppercase tracking-wider';
         } else {
-            statusEl.textContent = 'Overspent';
-            statusEl.className = 'text-[10px] font-bold px-2 py-1 rounded-lg inline-block bg-rose-500/20 text-rose-300 border border-rose-500/30';
+            statusEl.textContent = 'OVERSPENT';
+            statusEl.className = 'text-[11px] font-bold px-3 py-1 rounded-full bg-rose-100 text-rose-700 uppercase tracking-wider';
         }
 
         const max = Math.max(totalIncome, totalExpenses) || 1;
-        document.getElementById('incomeBar').style.width = `${(totalIncome/max)*100}%`;
-        document.getElementById('expenseBar').style.width = `${(totalExpenses/max)*100}%`;
+        // Animate bars slightly
+        setTimeout(() => {
+            document.getElementById('incomeBar').style.width = `${(totalIncome/max)*100}%`;
+            document.getElementById('expenseBar').style.width = `${(totalExpenses/max)*100}%`;
+        }, 100);
     }
 
     renderTransactions() {
@@ -190,39 +209,47 @@ class ExpenseTracker {
         const count = document.getElementById('txCount');
         const tx = this.getCurrentMonthTransactions().sort((a,b) => b.timestamp - a.timestamp);
 
-        count.textContent = `${tx.length} Items`;
+        count.textContent = `${tx.length}`;
         list.innerHTML = '';
 
         if(tx.length === 0) {
-            list.innerHTML = `<div class="flex flex-col items-center justify-center py-10 text-gray-500 opacity-60"><i data-lucide="inbox" class="w-10 h-10 mb-2 text-gray-600"></i><p class="text-sm">No transactions yet</p></div>`;
+            list.innerHTML = `
+                <div class="text-center text-slate-400 py-20 flex flex-col items-center">
+                    <div class="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mb-4">
+                        <i data-lucide="clipboard-list" class="w-8 h-8 text-slate-300"></i>
+                    </div>
+                    <p class="text-sm font-medium">No transactions found.</p>
+                </div>
+            `;
             return;
         }
 
         tx.forEach(t => {
             const icon = this.categoryIcons[t.category] || '💠';
             const isInc = t.type === 'income';
-            const colorClass = isInc ? 'text-emerald-400' : 'text-rose-400';
-            const bgClass = isInc ? 'bg-emerald-500/10 border-emerald-500/20' : 'bg-rose-500/10 border-rose-500/20';
+            const amountClass = isInc ? 'text-emerald-600' : 'text-slate-900';
+            const bgIcon = isInc ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 'bg-white text-slate-500 border-slate-200';
             const sign = isInc ? '+' : '-';
 
             const div = document.createElement('div');
-            div.className = `group flex items-center justify-between p-3 rounded-xl border border-white/5 bg-white/5 hover:bg-white/10 transition-all duration-200`;
+            div.className = `group relative flex items-center justify-between p-4 rounded-xl bg-white border border-slate-100 hover:border-indigo-200 hover:shadow-md transition-all duration-200`;
+            
             div.innerHTML = `
-                <div class="flex items-center gap-3 overflow-hidden">
-                    <div class="w-10 h-10 rounded-lg flex items-center justify-center text-lg border ${bgClass} shrink-0">
+                <div class="flex items-center gap-4 relative z-10 overflow-hidden">
+                    <div class="w-10 h-10 rounded-xl flex items-center justify-center text-lg border ${bgIcon} shrink-0 shadow-sm">
                         ${icon}
                     </div>
                     <div class="min-w-0">
-                        <div class="font-bold text-sm text-gray-200 truncate">${t.category}</div>
-                        <div class="text-xs text-gray-500 truncate flex items-center gap-1">
+                        <div class="font-bold text-sm text-slate-800 truncate">${t.category}</div>
+                        <div class="text-xs text-slate-500 truncate flex items-center gap-2 mt-0.5 font-medium">
                             <span>${t.date}</span>
-                            ${t.description ? `<span class="w-1 h-1 rounded-full bg-gray-600"></span> <span>${t.description}</span>` : ''}
+                            ${t.description ? `<span class="w-1 h-1 rounded-full bg-slate-300"></span> <span class="text-slate-400">${t.description}</span>` : ''}
                         </div>
                     </div>
                 </div>
-                <div class="flex items-center gap-3 pl-2">
-                    <span class="font-mono font-bold text-sm ${colorClass}">${sign}₹${t.amount.toLocaleString('en-IN')}</span>
-                    <button onclick="expenseTracker.showDeleteModal('${t.id}')" class="opacity-0 group-hover:opacity-100 focus:opacity-100 p-2 text-gray-400 hover:text-rose-400 hover:bg-white/5 rounded-lg transition-all">
+                <div class="flex items-center gap-4 pl-2 relative z-10">
+                    <span class="font-mono font-bold text-sm ${amountClass}">${sign}₹${t.amount.toLocaleString('en-IN')}</span>
+                    <button onclick="expenseTracker.showDeleteModal('${t.id}')" class="opacity-0 group-hover:opacity-100 focus:opacity-100 p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-all">
                         <i data-lucide="trash-2" class="w-4 h-4"></i>
                     </button>
                 </div>
@@ -235,12 +262,15 @@ class ExpenseTracker {
         const tx = this.getCurrentMonthTransactions();
         const expenses = tx.filter(t => t.type === 'expense');
         const container = document.getElementById('expenseBreakdown');
+        const emptyState = document.getElementById('chartEmptyState');
         
         if(expenses.length === 0) {
-            container.innerHTML = '<div class="text-center text-gray-500 py-10 text-sm opacity-60">No expenses to analyze.</div>';
+            container.innerHTML = '<div class="text-center text-slate-400 py-12 text-sm">Add expenses to see breakdown.</div>';
+            emptyState.classList.remove('hidden');
             if(this.chart) { this.chart.destroy(); this.chart = null; }
             return;
         }
+        emptyState.classList.add('hidden');
 
         const byCat = {};
         expenses.forEach(t => { byCat[t.category] = (byCat[t.category] || 0) + t.amount; });
@@ -248,23 +278,40 @@ class ExpenseTracker {
         const totalExp = Object.values(byCat).reduce((a,b) => a+b, 0);
         const sortedCats = Object.entries(byCat).sort((a,b) => b[1] - a[1]);
 
-        container.innerHTML = sortedCats.map(([cat, amt]) => {
+        // High Contrast Bright Palette
+        const palette = [
+            '#4f46e5', // Indigo
+            '#ec4899', // Pink
+            '#06b6d4', // Cyan
+            '#f59e0b', // Amber
+            '#10b981', // Emerald
+            '#8b5cf6', // Violet
+            '#ef4444', // Red
+            '#3b82f6', // Blue
+            '#6366f1', 
+            '#64748b'  // Slate
+        ];
+
+        container.innerHTML = sortedCats.map(([cat, amt], i) => {
             const pct = ((amt/totalExp)*100).toFixed(1);
-            const icon = this.categoryIcons[cat] || '🏷️';
+            const color = palette[i % palette.length];
+            
             return `
-                <div class="flex items-center justify-between p-2 rounded-lg hover:bg-white/5 transition-colors group">
-                    <div class="flex items-center gap-2 flex-1 min-w-0">
-                        <span class="text-sm">${icon}</span>
+                <div class="flex items-center justify-between p-2 rounded-lg hover:bg-slate-50 transition-colors group">
+                    <div class="flex items-center gap-3 flex-1 min-w-0">
+                        <div class="w-3 h-3 rounded-full shrink-0 shadow-sm" style="background-color: ${color}"></div>
                         <div class="flex-1 min-w-0">
-                            <div class="text-xs font-bold text-gray-300 truncate">${cat}</div>
-                            <div class="w-full bg-gray-700/50 h-1 rounded-full mt-1 overflow-hidden">
-                                <div class="h-full bg-purple-500" style="width: ${pct}%"></div>
+                            <div class="flex justify-between items-baseline mb-1">
+                                <span class="text-xs font-bold text-slate-700 truncate">${cat}</span>
+                                <span class="text-[10px] font-semibold text-slate-400">${pct}%</span>
+                            </div>
+                            <div class="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden">
+                                <div class="h-full" style="width: ${pct}%; background-color: ${color}"></div>
                             </div>
                         </div>
                     </div>
                     <div class="text-right pl-3">
-                        <div class="text-xs font-bold text-white font-mono">₹${amt.toLocaleString('en-IN')}</div>
-                        <div class="text-[10px] text-gray-500">${pct}%</div>
+                        <div class="text-xs font-bold text-slate-800 font-mono">₹${amt.toLocaleString('en-IN')}</div>
                     </div>
                 </div>
             `;
@@ -273,16 +320,13 @@ class ExpenseTracker {
         const ctx = document.getElementById('expenseChart').getContext('2d');
         const labels = sortedCats.map(x => x[0]);
         const data = sortedCats.map(x => x[1]);
-        const colors = [
-            '#a855f7', '#3b82f6', '#10b981', '#f43f5e', '#f59e0b', 
-            '#ec4899', '#6366f1', '#14b8a6', '#8b5cf6', '#64748b'
-        ];
-
+        
         if(this.chart) this.chart.destroy();
         
-        Chart.defaults.color = '#9ca3af';
-        Chart.defaults.borderColor = '#374151';
-        Chart.defaults.font.family = "'JetBrains Mono', monospace";
+        Chart.defaults.color = '#64748b';
+        Chart.defaults.borderColor = '#e2e8f0';
+        Chart.defaults.font.family = "'Plus Jakarta Sans', sans-serif";
+        Chart.defaults.font.weight = "600";
 
         this.chart = new Chart(ctx, {
             type: 'doughnut',
@@ -290,26 +334,29 @@ class ExpenseTracker {
                 labels: labels,
                 datasets: [{
                     data: data,
-                    backgroundColor: colors,
-                    borderWidth: 0,
-                    hoverOffset: 5
+                    backgroundColor: palette,
+                    borderWidth: 2,
+                    borderColor: '#ffffff',
+                    hoverOffset: 4
                 }]
             },
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
-                cutout: '75%',
+                cutout: '70%',
                 plugins: {
                     legend: { display: false },
                     tooltip: {
-                        backgroundColor: 'rgba(20, 20, 25, 0.9)',
-                        titleColor: '#fff',
-                        bodyColor: '#e5e7eb',
+                        backgroundColor: '#ffffff',
+                        titleColor: '#1e293b',
+                        bodyColor: '#475569',
                         padding: 12,
-                        cornerRadius: 12,
+                        cornerRadius: 8,
                         displayColors: true,
-                        borderColor: 'rgba(255,255,255,0.1)',
-                        borderWidth: 1
+                        borderColor: '#e2e8f0',
+                        borderWidth: 1,
+                        boxPadding: 4,
+                        bodyFont: { weight: 'bold' }
                     }
                 }
             }
@@ -321,9 +368,10 @@ class ExpenseTracker {
         if(!t) return;
         this.deleteTransactionId = id;
         document.getElementById('transactionDetails').innerHTML = `
-            <div class="flex justify-between mb-1"><span class="text-gray-500">Category:</span> <span class="text-white">${t.category}</span></div>
-            <div class="flex justify-between mb-1"><span class="text-gray-500">Amount:</span> <span class="text-white font-bold">₹${t.amount}</span></div>
-            <div class="flex justify-between"><span class="text-gray-500">Date:</span> <span class="text-gray-300">${t.date}</span></div>
+            <div class="flex justify-between items-center"><span class="text-slate-500">Category</span> <span class="text-slate-900 font-bold">${t.category}</span></div>
+            <div class="flex justify-between items-center"><span class="text-slate-500">Amount</span> <span class="text-slate-900 font-mono font-bold text-lg">₹${t.amount}</span></div>
+            <div class="flex justify-between items-center"><span class="text-slate-500">Date</span> <span class="text-slate-700 font-medium">${t.date}</span></div>
+            ${t.description ? `<div class="pt-2 mt-2 border-t border-slate-200 text-xs text-slate-500 italic">"${t.description}"</div>` : ''}
         `;
         document.getElementById('deleteModal').classList.remove('hidden');
     }
@@ -339,7 +387,7 @@ class ExpenseTracker {
         this.saveData();
         this.updateAll();
         this.hideDeleteModal();
-        addToast('Transaction deleted', 'success');
+        addToast('Transaction removed', 'success');
     }
 
     getAllMonthsSummary() {
@@ -384,8 +432,8 @@ class ExpenseTracker {
                     datasets: [{
                         data: data,
                         backgroundColor: [
-                            '#a855f7', '#3b82f6', '#10b981', '#f43f5e', '#f59e0b', 
-                            '#ec4899', '#6366f1', '#14b8a6', '#8b5cf6', '#64748b'
+                            '#4f46e5', '#ec4899', '#06b6d4', '#f59e0b', '#10b981', 
+                            '#8b5cf6', '#ef4444', '#3b82f6', '#6366f1', '#64748b'
                         ],
                         borderWidth: 0
                     }]
@@ -397,7 +445,7 @@ class ExpenseTracker {
                         legend: { 
                             display: true, 
                             position: 'right',
-                            labels: { font: { size: 14 } }
+                            labels: { font: { size: 14, weight: 'bold' } }
                         } 
                     }
                 }
@@ -414,7 +462,8 @@ class ExpenseTracker {
     async generateEnhancedPDF() {
         const btn = document.getElementById('generateData');
         const originalText = btn.innerHTML;
-        btn.innerHTML = '<div class="animate-spin h-4 w-4 border-2 border-white/20 border-t-white rounded-full"></div> Generating...';
+        btn.innerHTML = '<i data-lucide="loader" class="animate-spin w-4 h-4"></i> Generating...';
+        if(window.lucide) lucide.createIcons();
         btn.disabled = true;
 
         try {
@@ -429,25 +478,25 @@ class ExpenseTracker {
             const currentKey = this.getCurrentMonthKey();
             const monthlyData = allMonthsData.filter(m => m.monthKey === currentKey);
 
-            // Title
+            // --- Clean Header Style ---
             doc.setFont('helvetica', 'bold'); 
             doc.setFontSize(24); 
-            doc.setTextColor(147, 51, 234);
-            doc.text('Student Expense Manager', pageWidth/2, y, {align:'center'});
+            doc.setTextColor(79, 70, 229); // Indigo 600
+            doc.text('Expense Manager', pageWidth/2, y, {align:'center'});
 
             y += 20; 
             doc.setFont('helvetica', 'normal'); 
-            doc.setFontSize(12); 
-            doc.setTextColor(156, 163, 175);
-            doc.text('Financial Report', pageWidth/2, y, {align:'center'});
+            doc.setFontSize(11); 
+            doc.setTextColor(100, 116, 139); // Slate 500
+            doc.text('Financial Statement', pageWidth/2, y, {align:'center'});
 
             y += 40;
             
-            // Overall Summary Box
-            doc.setDrawColor(147, 51, 234);
+            // --- Summary Box (Light) ---
+            doc.setDrawColor(226, 232, 240); // Slate 200
             doc.setLineWidth(1);
-            doc.setFillColor(250, 250, 255);
-            doc.roundedRect(left, y, usableWidth, 90, 8, 8, 'FD');
+            doc.setFillColor(248, 250, 252); // Slate 50
+            doc.roundedRect(left, y, usableWidth, 90, 4, 4, 'FD');
 
             const totalInc = monthlyData.reduce((s,m)=>s+m.income,0);
             const totalExp = monthlyData.reduce((s,m)=>s+m.expenses,0);
@@ -456,19 +505,19 @@ class ExpenseTracker {
             y += 25;
             doc.setFont('helvetica', 'bold');
             doc.setFontSize(14);
-            doc.setTextColor(31, 41, 55);
-            doc.text('Executive Summary', pageWidth/2, y, {align:'center'});
+            doc.setTextColor(30, 41, 59);
+            doc.text('Overview', pageWidth/2, y, {align:'center'});
 
             y += 25;
             doc.setFont('helvetica', 'normal');
             doc.setFontSize(11);
-            doc.setTextColor(55, 65, 81);
+            doc.setTextColor(51, 65, 85);
             doc.text(`Total Income: Rs. ${totalInc.toLocaleString('en-IN')}`, left + 30, y);
             doc.text(`Total Expenses: Rs. ${totalExp.toLocaleString('en-IN')}`, pageWidth - right - 30, y, {align:'right'});
             
             y += 20;
             doc.setFont('helvetica', 'bold');
-            doc.setTextColor(netBal >= 0 ? 16 : 225, netBal >= 0 ? 185 : 29, netBal >= 0 ? 129 : 72); 
+            doc.setTextColor(netBal >= 0 ? 16 : 220, netBal >= 0 ? 185 : 38, netBal >= 0 ? 129 : 38); 
             doc.text(`Net Balance: Rs. ${netBal.toLocaleString('en-IN')}`, pageWidth/2, y, {align:'center'});
 
             doc.addPage(); y = 50;
@@ -476,8 +525,8 @@ class ExpenseTracker {
             // --- Charts ---
             doc.setFont('helvetica', 'bold'); 
             doc.setFontSize(16); 
-            doc.setTextColor(147, 51, 234);
-            doc.text('Monthly Spending Analysis', pageWidth/2, y, {align:'center'});
+            doc.setTextColor(30, 41, 59);
+            doc.text('Spending Analysis', pageWidth/2, y, {align:'center'});
             y += 30;
 
             const allCats = {};
@@ -504,30 +553,31 @@ class ExpenseTracker {
                     head: [['Category', 'Total Amount']],
                     body: sortedAllCats.map(([c, a]) => [c, `Rs. ${a.toLocaleString('en-IN')}`]),
                     theme: 'grid',
-                    headStyles: { fillColor: [147, 51, 234], halign: 'center' },
+                    headStyles: { fillColor: [79, 70, 229], halign: 'center' }, // Indigo
                     columnStyles: { 1: { halign: 'right', fontStyle: 'bold' } },
-                    margin: { left, right }
+                    margin: { left, right },
+                    styles: { textColor: [51, 65, 85] }
                 });
                 y = doc.lastAutoTable.finalY + 40;
             } else {
                 doc.setFont('helvetica', 'italic');
                 doc.setFontSize(12);
                 doc.setTextColor(100);
-                doc.text("No data available for this month.", pageWidth/2, y, {align:'center'});
+                doc.text("No data available.", pageWidth/2, y, {align:'center'});
                 y += 40;
             }
 
-            // --- Monthly Data ---
+            // --- Detailed Data ---
             monthlyData.forEach((m, idx) => {
                 if(y > pageHeight - 100) { doc.addPage(); y = 50; }
 
                 doc.setFont('helvetica', 'bold');
                 doc.setFontSize(14);
-                doc.setTextColor(59, 130, 246);
+                doc.setTextColor(79, 70, 229);
                 doc.text(m.month, left, y);
                 
                 doc.setFontSize(10);
-                doc.setTextColor(107, 114, 128);
+                doc.setTextColor(100, 116, 139);
                 doc.text(`Balance: Rs. ${m.balance.toLocaleString('en-IN')}`, pageWidth - right, y, {align:'right'});
 
                 y += 15;
@@ -538,11 +588,11 @@ class ExpenseTracker {
                         head: [['Income Source', 'Description', 'Amount']],
                         body: m.incomeTransactions.map(t => [
                             t.category, 
-                            t.description || '',
+                            t.description || '', 
                             `Rs. ${t.amount.toLocaleString('en-IN')}`
                         ]),
                         theme: 'striped',
-                        headStyles: { fillColor: [16, 185, 129] },
+                        headStyles: { fillColor: [16, 185, 129] }, // Emerald
                         margin: { left, right }
                     });
                     y = doc.lastAutoTable.finalY + 15;
@@ -554,11 +604,11 @@ class ExpenseTracker {
                         head: [['Expense', 'Description', 'Amount']],
                         body: m.expenseTransactions.map(t => [
                             t.category, 
-                            t.description || '',
+                            t.description || '', 
                             `Rs. ${t.amount.toLocaleString('en-IN')}`
                         ]),
                         theme: 'striped',
-                        headStyles: { fillColor: [244, 63, 94] },
+                        headStyles: { fillColor: [244, 63, 94] }, // Rose
                         margin: { left, right }
                     });
                     y = doc.lastAutoTable.finalY + 30;
@@ -566,7 +616,7 @@ class ExpenseTracker {
             });
 
             doc.save(`Financial_Report_${currentKey}.pdf`);
-            addToast('Report generated successfully');
+            addToast('Report downloaded', 'success');
 
         } catch (err) {
             console.error(err);
@@ -574,6 +624,7 @@ class ExpenseTracker {
         } finally {
             btn.innerHTML = originalText;
             btn.disabled = false;
+            if(window.lucide) lucide.createIcons();
         }
     }
 }
@@ -587,13 +638,15 @@ function switchTab(tab) {
     if(tab === 'income') {
         incForm.classList.remove('hidden');
         expForm.classList.add('hidden');
-        tabInc.className = 'flex-1 py-4 text-sm font-bold text-emerald-400 bg-emerald-500/10 border-b-2 border-emerald-500 transition-all hover:bg-emerald-500/20';
-        tabExp.className = 'flex-1 py-4 text-sm font-bold text-gray-400 hover:text-white hover:bg-white/5 transition-all border-b-2 border-transparent';
+        
+        tabInc.className = 'py-2.5 rounded-lg text-sm font-bold transition-all duration-200 flex items-center justify-center gap-2 shadow-sm bg-white text-emerald-600 scale-105';
+        tabExp.className = 'py-2.5 rounded-lg text-sm font-bold transition-all duration-200 flex items-center justify-center gap-2 text-slate-500 hover:text-slate-700';
     } else {
         incForm.classList.add('hidden');
         expForm.classList.remove('hidden');
-        tabExp.className = 'flex-1 py-4 text-sm font-bold text-rose-400 bg-rose-500/10 border-b-2 border-rose-500 transition-all';
-        tabInc.className = 'flex-1 py-4 text-sm font-bold text-gray-400 hover:text-white hover:bg-white/5 transition-all border-b-2 border-transparent';
+        
+        tabInc.className = 'py-2.5 rounded-lg text-sm font-bold transition-all duration-200 flex items-center justify-center gap-2 text-slate-500 hover:text-slate-700';
+        tabExp.className = 'py-2.5 rounded-lg text-sm font-bold transition-all duration-200 flex items-center justify-center gap-2 shadow-sm bg-white text-rose-600 scale-105';
     }
 }
 

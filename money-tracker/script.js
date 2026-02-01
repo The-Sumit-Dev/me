@@ -72,8 +72,6 @@ class ExpenseTracker {
         this.updateMonthDisplay();
         this.updateAll();
         if(window.lucide) lucide.createIcons();
-        
-        // Initial tab setup
         switchTab('income');
     }
 
@@ -197,7 +195,6 @@ class ExpenseTracker {
         }
 
         const max = Math.max(totalIncome, totalExpenses) || 1;
-        // Animate bars slightly
         setTimeout(() => {
             document.getElementById('incomeBar').style.width = `${(totalIncome/max)*100}%`;
             document.getElementById('expenseBar').style.width = `${(totalExpenses/max)*100}%`;
@@ -274,28 +271,14 @@ class ExpenseTracker {
 
         const byCat = {};
         expenses.forEach(t => { byCat[t.category] = (byCat[t.category] || 0) + t.amount; });
-        
-        const totalExp = Object.values(byCat).reduce((a,b) => a+b, 0);
         const sortedCats = Object.entries(byCat).sort((a,b) => b[1] - a[1]);
+        const totalExp = Object.values(byCat).reduce((a,b) => a+b, 0);
 
-        // High Contrast Bright Palette
-        const palette = [
-            '#4f46e5', // Indigo
-            '#ec4899', // Pink
-            '#06b6d4', // Cyan
-            '#f59e0b', // Amber
-            '#10b981', // Emerald
-            '#8b5cf6', // Violet
-            '#ef4444', // Red
-            '#3b82f6', // Blue
-            '#6366f1', 
-            '#64748b'  // Slate
-        ];
+        const palette = ['#4f46e5', '#ec4899', '#06b6d4', '#f59e0b', '#10b981', '#8b5cf6', '#ef4444', '#3b82f6', '#6366f1', '#64748b'];
 
         container.innerHTML = sortedCats.map(([cat, amt], i) => {
             const pct = ((amt/totalExp)*100).toFixed(1);
             const color = palette[i % palette.length];
-            
             return `
                 <div class="flex items-center justify-between p-2 rounded-lg hover:bg-slate-50 transition-colors group">
                     <div class="flex items-center gap-3 flex-1 min-w-0">
@@ -318,22 +301,15 @@ class ExpenseTracker {
         }).join('');
 
         const ctx = document.getElementById('expenseChart').getContext('2d');
-        const labels = sortedCats.map(x => x[0]);
-        const data = sortedCats.map(x => x[1]);
         
         if(this.chart) this.chart.destroy();
         
-        Chart.defaults.color = '#64748b';
-        Chart.defaults.borderColor = '#e2e8f0';
-        Chart.defaults.font.family = "'Plus Jakarta Sans', sans-serif";
-        Chart.defaults.font.weight = "600";
-
         this.chart = new Chart(ctx, {
             type: 'doughnut',
             data: {
-                labels: labels,
+                labels: sortedCats.map(x => x[0]),
                 datasets: [{
-                    data: data,
+                    data: sortedCats.map(x => x[1]),
                     backgroundColor: palette,
                     borderWidth: 2,
                     borderColor: '#ffffff',
@@ -344,21 +320,7 @@ class ExpenseTracker {
                 responsive: true,
                 maintainAspectRatio: false,
                 cutout: '70%',
-                plugins: {
-                    legend: { display: false },
-                    tooltip: {
-                        backgroundColor: '#ffffff',
-                        titleColor: '#1e293b',
-                        bodyColor: '#475569',
-                        padding: 12,
-                        cornerRadius: 8,
-                        displayColors: true,
-                        borderColor: '#e2e8f0',
-                        borderWidth: 1,
-                        boxPadding: 4,
-                        bodyFont: { weight: 'bold' }
-                    }
-                }
+                plugins: { legend: { display: false } }
             }
         });
     }
@@ -371,7 +333,6 @@ class ExpenseTracker {
             <div class="flex justify-between items-center"><span class="text-slate-500">Category</span> <span class="text-slate-900 font-bold">${t.category}</span></div>
             <div class="flex justify-between items-center"><span class="text-slate-500">Amount</span> <span class="text-slate-900 font-mono font-bold text-lg">₹${t.amount}</span></div>
             <div class="flex justify-between items-center"><span class="text-slate-500">Date</span> <span class="text-slate-700 font-medium">${t.date}</span></div>
-            ${t.description ? `<div class="pt-2 mt-2 border-t border-slate-200 text-xs text-slate-500 italic">"${t.description}"</div>` : ''}
         `;
         document.getElementById('deleteModal').classList.remove('hidden');
     }
@@ -399,12 +360,11 @@ class ExpenseTracker {
                 monthly[key] = {
                     month: `${this.monthNames[d.getMonth()]} ${d.getFullYear()}`,
                     monthKey: key,
-                    income: 0, expenses: 0, balance: 0, transactionCount: 0,
+                    income: 0, expenses: 0, balance: 0, 
                     incomeTransactions: [], expenseTransactions: [], categories: {}
                 };
             }
             const m = monthly[key];
-            m.transactionCount++;
             if(t.type === 'income') { 
                 m.income += t.amount; 
                 m.incomeTransactions.push(t); 
@@ -418,252 +378,332 @@ class ExpenseTracker {
         return Object.entries(monthly).sort(([a],[b]) => b.localeCompare(a)).map(([,v]) => v);
     }
 
+    // --- CHART GENERATION (BAR CHART) ---
     async getChartImage(labels, data) {
         return new Promise((resolve) => {
             const canvas = document.createElement('canvas');
-            canvas.width = 400; 
-            canvas.height = 200;
+            canvas.width = 600; 
+            canvas.height = 400;
             const ctx = canvas.getContext('2d');
             
-            const chart = new Chart(ctx, {
-                type: 'doughnut',
+            // Custom Bar Chart for PDF
+            new Chart(ctx, {
+                type: 'bar', // Horizontal Bar
                 data: {
                     labels: labels,
                     datasets: [{
                         data: data,
-                        backgroundColor: [
-                            '#4f46e5', '#ec4899', '#06b6d4', '#f59e0b', '#10b981', 
-                            '#8b5cf6', '#ef4444', '#3b82f6', '#6366f1', '#64748b'
-                        ],
-                        borderWidth: 0
+                        backgroundColor: '#4f46e5', // Indigo bars
+                        borderRadius: 4,
+                        barThickness: 20
                     }]
                 },
                 options: {
+                    indexAxis: 'y', // Horizontal Bars
                     animation: false, 
                     responsive: false,
-                    plugins: {
-                        legend: { 
-                            display: true, 
-                            position: 'right',
-                            labels: { font: { size: 14, weight: 'bold' } }
-                        } 
-                    }
+                    plugins: { legend: { display: false } }, 
+                    scales: {
+                        x: { display: false }, // Hide Grid
+                        y: { 
+                            ticks: { font: { size: 14, weight: 'bold' }, color: '#334155' },
+                            grid: { display: false }
+                        }
+                    },
+                    layout: { padding: 10 }
                 }
             });
-            
-            setTimeout(() => {
-                const img = chart.toBase64Image();
-                chart.destroy();
-                resolve(img);
-            }, 200);
+            setTimeout(() => resolve(canvas.toDataURL('image/png')), 200);
         });
     }
 
-    // --- ENHANCED PDF GENERATION LOGIC ---
+    // ==========================================
+    //   REDESIGNED PROFESSIONAL PDF GENERATION
+    // ==========================================
     async generateEnhancedPDF() {
         const btn = document.getElementById('generateData');
         const originalText = btn.innerHTML;
-        btn.innerHTML = '<i data-lucide="loader" class="animate-spin w-4 h-4"></i> Designing PDF...';
+        btn.innerHTML = '<i data-lucide="loader" class="animate-spin w-4 h-4"></i> Designing Report...';
         btn.disabled = true;
         if(window.lucide) lucide.createIcons();
-    
+
         try {
             const { jsPDF } = window.jspdf;
-            const doc = new jsPDF('p', 'mm', 'a4'); // A4 size: 210 x 297 mm
-            
-            // --- Design Constants ---
-            const colors = {
-                primary: [79, 70, 229],   // Indigo 600
-                primaryBg: [238, 242, 255], // Indigo 50
-                success: [16, 185, 129],  // Emerald 500
-                successBg: [236, 253, 245], // Emerald 50
-                danger: [244, 63, 94],    // Rose 500
-                dangerBg: [255, 241, 242],  // Rose 50
-                text: [30, 41, 59],       // Slate 800
-                textLight: [100, 116, 139], // Slate 500
-                white: [255, 255, 255],
-                border: [226, 232, 240]   // Slate 200
-            };
-    
+            const doc = new jsPDF('p', 'mm', 'a4');
+            const pageWidth = 210;
             const margin = 15;
-            let yPos = 0;
-    
-            // ==========================================
-            // PART 1: NEW BEAUTIFUL FIRST PAGE DESIGN
-            // ==========================================
             
-            // --- Header Section ---
-            doc.setFillColor(...colors.primary);
-            doc.rect(0, 0, 210, 50, 'F'); // Header Banner
-    
-            doc.setTextColor(...colors.white);
-            doc.setFont('helvetica', 'bold');
-            doc.setFontSize(26);
-            doc.text('FINANCIAL REPORT', margin, 25);
-    
-            doc.setFont('helvetica', 'normal');
-            doc.setFontSize(12);
-            doc.setTextColor(224, 231, 255); // Lighter Indigo
-            const dateStr = new Date().toLocaleDateString('en-IN', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
-            doc.text(`Generated on: ${dateStr}`, margin, 34);
-    
-            // Logo/Icon placeholder (Right side)
-            doc.setFillColor(255, 255, 255, 0.2);
-            doc.circle(185, 25, 12, 'F');
-            doc.setFontSize(16);
-            doc.text('$', 183, 27); // Simple currency symbol as logo
-    
-            yPos = 65;
-    
-            // --- Summary Cards ---
-            // Get Data
-            const allMonthsData = this.getAllMonthsSummary();
+            // --- Premium Midnight Blue & Gold Theme ---
+            const colors = {
+                brand: [15, 23, 42],        // Slate 900 (Midnight)
+                brandAccent: [79, 70, 229], // Indigo 600
+                gold: [217, 119, 6],        // Amber 600
+                textMain: [30, 41, 59],     // Slate 800
+                textMuted: [100, 116, 139], // Slate 500
+                success: [16, 185, 129],    // Green
+                danger: [220, 38, 38],      // Red
+                bgLight: [248, 250, 252],   // Slate 50
+                white: [255, 255, 255]
+            };
+
             const currentKey = this.getCurrentMonthKey();
-            const mData = allMonthsData.find(m => m.monthKey === currentKey) || { income: 0, expenses: 0, balance: 0, incomeTransactions: [], expenseTransactions: [], categories: {} };
-    
-            const cardWidth = 55;
-            const cardHeight = 30;
-            const gap = (210 - (margin * 2) - (cardWidth * 3)) / 2;
-    
-            // Card 1: Income
-            this.drawCard(doc, margin, yPos, cardWidth, cardHeight, colors.successBg, colors.success, 'TOTAL INCOME', mData.income);
-            
-            // Card 2: Expenses
-            this.drawCard(doc, margin + cardWidth + gap, yPos, cardWidth, cardHeight, colors.dangerBg, colors.danger, 'TOTAL EXPENSES', mData.expenses);
-            
-            // Card 3: Balance
-            this.drawCard(doc, margin + (cardWidth + gap) * 2, yPos, cardWidth, cardHeight, colors.primaryBg, colors.primary, 'NET BALANCE', mData.balance);
-    
-            yPos += cardHeight + 15;
-    
-            // --- Chart Section ---
-            // Prepare Data
-            const allCats = {};
-            if (mData.categories) {
-                Object.entries(mData.categories).forEach(([cat, amt]) => {
-                    allCats[cat] = amt;
-                });
-            }
-            const sortedCats = Object.entries(allCats).sort((a,b) => b[1] - a[1]);
-            
-            if (sortedCats.length > 0) {
-                 doc.setFont('helvetica', 'bold');
-                 doc.setFontSize(14);
-                 doc.setTextColor(...colors.text);
-                 doc.text('Spending Breakdown', margin, yPos);
-                 yPos += 10;
-    
-                 // Generate High-Res Chart Image
-                 const labels = sortedCats.map(x => x[0]);
-                 const data = sortedCats.map(x => x[1]);
-                 const chartImg = await this.getChartImage(labels, data); // Existing method returns Base64
-                 
-                 // Center Chart
-                 const imgWidth = 100;
-                 const imgHeight = 50; 
-                 const xCent = (210 - imgWidth) / 2;
-                 doc.addImage(chartImg, 'PNG', xCent, yPos, imgWidth, imgHeight);
-                 
-                 yPos += imgHeight + 20;
-            } else {
-                 yPos += 20;
-                 doc.setFontSize(10);
-                 doc.setTextColor(...colors.textLight);
-                 doc.text('(No expense data to visualize)', margin, yPos);
-                 yPos += 10;
-            }
+            const allMonthsData = this.getAllMonthsSummary();
+            const m = allMonthsData.find(x => x.monthKey === currentKey) || {
+                income: 0, expenses: 0, balance: 0, categories: {}, incomeTransactions: [], expenseTransactions: []
+            };
 
-            // ==========================================
-            // PART 2: ORIGINAL TABLE DESIGN (Next Pages)
-            // ==========================================
+            // === PAGE 1: EXECUTIVE DASHBOARD ===
+
+            // 1. STUNNING GEOMETRIC HEADER (No Ugly Circles)
+            doc.setFillColor(...colors.brand);
+            doc.rect(0, 0, pageWidth, 60, 'F'); 
             
-            // We use the original filtered data logic
-            const monthlyData = allMonthsData.filter(m => m.monthKey === currentKey);
+            // Geometric Accent (The "Tech Slash")
+            // Draw a stylish polygon on the right side
+            doc.setFillColor(30, 41, 59); // Lighter Slate Blue
+            doc.triangle(140, 0, 210, 0, 210, 60, 'F'); 
+            
+            // Second Accent Layer (Indigo)
+            doc.setFillColor(79, 70, 229); // Brand Indigo
+            doc.triangle(190, 0, 210, 0, 210, 20, 'F');
 
-            monthlyData.forEach((m) => {
-                // Ensure we have space, otherwise add page
-                if(yPos > 250) { doc.addPage(); yPos = 20; }
+            // Title with Gold Accent
+            doc.setTextColor(255, 255, 255);
+            doc.setFont('helvetica', 'bold');
+            doc.setFontSize(28);
+            doc.text('FINANCIAL STATEMENT', margin, 30);
+            
+            // Subtitle
+            doc.setFontSize(11);
+            doc.setFont('helvetica', 'normal');
+            doc.setTextColor(226, 232, 240); 
+            const reportDate = new Date().toLocaleDateString('en-IN', { year: 'numeric', month: 'long', day: 'numeric' });
+            doc.text(`Generated on: ${reportDate}`, margin, 38);
 
-                doc.setFont('helvetica', 'bold');
-                doc.setFontSize(14);
-                doc.setTextColor(79, 70, 229);
-                doc.text(m.month, margin, yPos);
+            // Month Indicator
+            doc.setFont('helvetica', 'bold');
+            doc.setFontSize(14);
+            doc.setTextColor(255, 255, 255);
+            // Right aligned text over the geometric pattern
+            doc.text(this.monthNames[this.currentMonth].toUpperCase() + ' ' + this.currentYear, pageWidth - margin, 50, {align: 'right'});
+
+            // Gold Separator Line
+            doc.setDrawColor(...colors.gold);
+            doc.setLineWidth(0.8);
+            doc.line(0, 60, pageWidth, 60);
+
+            let y = 75;
+
+            // 2. The Big Three (Premium Stat Boxes)
+            const metrics = [
+                { label: 'TOTAL INCOME', val: m.income, col: colors.success },
+                { label: 'TOTAL EXPENSE', val: m.expenses, col: colors.danger },
+                { label: 'NET BALANCE', val: m.balance, col: colors.brandAccent }
+            ];
+
+            const cardW = (pageWidth - (margin * 2) - 10) / 3;
+            const cardH = 35;
+
+            metrics.forEach((metric, i) => {
+                const x = margin + (i * (cardW + 5));
                 
-                doc.setFontSize(10);
-                doc.setTextColor(100, 116, 139);
-                doc.text(`Balance: Rs. ${m.balance.toLocaleString('en-IN')}`, 210 - margin, yPos, {align:'right'});
+                // Box Shadow
+                doc.setFillColor(226, 232, 240);
+                doc.rect(x+1, y+1, cardW, cardH, 'F');
 
-                yPos += 10;
+                // Main Box Body
+                doc.setFillColor(...colors.white);
+                doc.rect(x, y, cardW, cardH, 'F');
 
-                // --- ORIGINAL INCOME TABLE STYLE ---
-                if (m.incomeTransactions.length > 0) {
-                    doc.autoTable({
-                        startY: yPos,
-                        head: [['Date', 'Income Source', 'Description', 'Amount']], 
-                        body: m.incomeTransactions.map(t => [
-                            t.date, 
-                            t.category, 
-                            t.description || '', 
-                            `Rs. ${t.amount.toLocaleString('en-IN')}`
-                        ]),
-                        theme: 'striped', // Original Theme
-                        headStyles: { fillColor: [16, 185, 129] }, // Original Emerald Color
-                        margin: { left: margin, right: margin }
-                    });
-                    yPos = doc.lastAutoTable.finalY + 15;
-                }
+                // Colored Header Strip
+                doc.setFillColor(...metric.col);
+                doc.rect(x, y, cardW, 6, 'F');
 
-                // --- ORIGINAL EXPENSE TABLE STYLE ---
-                if (m.expenseTransactions.length > 0) {
-                    doc.autoTable({
-                        startY: yPos,
-                        head: [['Date', 'Expense', 'Description', 'Amount']], 
-                        body: m.expenseTransactions.map(t => [
-                            t.date, 
-                            t.category, 
-                            t.description || '', 
-                            `Rs. ${t.amount.toLocaleString('en-IN')}`
-                        ]),
-                        theme: 'striped', // Original Theme
-                        headStyles: { fillColor: [244, 63, 94] }, // Original Rose Color
-                        margin: { left: margin, right: margin }
-                    });
-                    yPos = doc.lastAutoTable.finalY + 30;
-                }
+                // Border
+                doc.setDrawColor(226, 232, 240);
+                doc.setLineWidth(0.3);
+                doc.rect(x, y, cardW, cardH, 'D');
+
+                // Label
+                doc.setFontSize(8);
+                doc.setTextColor(...colors.textMuted);
+                doc.setFont('helvetica', 'bold');
+                doc.text(metric.label, x + (cardW/2), y + 14, {align:'center'});
+
+                // Value
+                doc.setFontSize(14);
+                doc.setTextColor(...colors.textMain);
+                doc.text(`Rs. ${metric.val.toLocaleString('en-IN')}`, x + (cardW/2), y + 24, {align:'center'});
             });
 
-            // Save
-            doc.save(`Report_${currentKey}.pdf`);
-            addToast('Professional Report Downloaded!', 'success');
-    
+            y += 50;
+
+            // 3. Spending Analysis Section
+            doc.setFontSize(16);
+            doc.setTextColor(...colors.brand);
+            doc.setFont('helvetica', 'bold');
+            doc.text('Spending Breakdown', margin, y);
+            
+            // Gold Underline
+            doc.setDrawColor(...colors.gold);
+            doc.setLineWidth(1);
+            doc.line(margin, y + 3, margin + 40, y + 3);
+            doc.setDrawColor(226, 232, 240);
+            doc.line(margin + 42, y + 3, pageWidth - margin, y + 3);
+            
+            y += 15;
+
+            const cats = Object.entries(m.categories).sort((a,b) => b[1] - a[1]);
+
+            if (cats.length > 0) {
+                // A. Horizontal Bar Chart (Left)
+                const chartImg = await this.getChartImage(cats.map(c=>c[0]), cats.map(c=>c[1]));
+                // Draw Chart (Adjust size for horizontal bars)
+                doc.addImage(chartImg, 'PNG', margin, y, 90, 70);
+
+                // B. Detailed List (Right) - ALL Categories
+                const listX = 120;
+                let listY = y + 5;
+
+                doc.setFontSize(10);
+                doc.setTextColor(...colors.brand);
+                doc.text('CATEGORY DETAILS', listX, listY);
+                listY += 8;
+
+                // Loop through ALL categories
+                cats.forEach(([cat, amt], idx) => {
+                    // Prevent overflow on first page
+                    if (listY > 260) return; 
+
+                    const pct = ((amt / m.expenses) * 100).toFixed(1);
+                    
+                    // Bullet Point
+                    doc.setFillColor(...colors.brandAccent);
+                    doc.circle(listX + 2, listY - 1, 1, 'F');
+
+                    // Category Name
+                    doc.setFontSize(9);
+                    doc.setTextColor(...colors.textMain);
+                    doc.setFont('helvetica', 'bold');
+                    doc.text(cat, listX + 6, listY);
+
+                    // Amount
+                    doc.setFont('helvetica', 'normal');
+                    doc.setTextColor(...colors.textMuted);
+                    doc.text(`Rs. ${amt.toLocaleString('en-IN')}`, pageWidth - margin, listY, {align: 'right'});
+                    
+                    // Dotted Line
+                    doc.setDrawColor(226, 232, 240);
+                    doc.setLineWidth(0.1);
+                    doc.line(listX, listY + 2, pageWidth - margin, listY + 2);
+
+                    listY += 8;
+                });
+
+            } else {
+                doc.setFontSize(11);
+                doc.setTextColor(...colors.textMuted);
+                doc.text("No spending data available.", margin, y + 10);
+            }
+
+            // Footer P1
+            this.drawFooter(doc, 1, 1);
+
+            // === PAGE 2+: LEDGERS ===
+            doc.addPage();
+            y = 20;
+
+            doc.setFont('helvetica', 'bold');
+            doc.setFontSize(16);
+            doc.setTextColor(...colors.brand);
+            doc.text('Detailed Ledger', margin, y);
+            y += 10;
+
+            // 1. Income Table
+            if (m.incomeTransactions.length > 0) {
+                doc.setFontSize(12);
+                doc.setTextColor(...colors.success);
+                doc.text('Income Sources', margin, y);
+                y += 3;
+
+                doc.autoTable({
+                    startY: y,
+                    head: [['Date', 'Source', 'Note', 'Amount']],
+                    body: m.incomeTransactions.map(t => [
+                        t.date, 
+                        t.category, 
+                        t.description || '-', 
+                        `Rs. ${t.amount.toLocaleString('en-IN')}`
+                    ]),
+                    theme: 'grid',
+                    styles: { fontSize: 9, cellPadding: 3, textColor: colors.textMain, font: 'helvetica' },
+                    headStyles: { fillColor: colors.success, textColor: [255,255,255], fontStyle: 'bold' },
+                    columnStyles: { 3: { halign: 'right', fontStyle: 'bold' } },
+                    margin: { left: margin, right: margin }
+                });
+                y = doc.lastAutoTable.finalY + 15;
+            }
+
+            // 2. Expense Table
+            if (m.expenseTransactions.length > 0) {
+                if (y > 240) { doc.addPage(); y = 20; }
+
+                doc.setFontSize(12);
+                doc.setTextColor(...colors.danger);
+                doc.setFont('helvetica', 'bold');
+                doc.text('Expense Breakdown', margin, y);
+                y += 3;
+
+                doc.autoTable({
+                    startY: y,
+                    head: [['Date', 'Category', 'Note', 'Amount']],
+                    body: m.expenseTransactions.map(t => [
+                        t.date, 
+                        t.category, 
+                        t.description || '-', 
+                        `Rs. ${t.amount.toLocaleString('en-IN')}`
+                    ]),
+                    theme: 'grid',
+                    styles: { fontSize: 9, cellPadding: 3, textColor: colors.textMain, font: 'helvetica' },
+                    headStyles: { fillColor: colors.danger, textColor: [255,255,255], fontStyle: 'bold' },
+                    columnStyles: { 3: { halign: 'right', fontStyle: 'bold' } },
+                    margin: { left: margin, right: margin }
+                });
+            }
+
+            // Global Footer
+            const pageCount = doc.internal.getNumberOfPages();
+            for (let i = 1; i <= pageCount; i++) {
+                doc.setPage(i);
+                this.drawFooter(doc, i, pageCount);
+            }
+
+            doc.save(`Financial_Report_${currentKey}.pdf`);
+            addToast('Report Successfully Exported', 'success');
+
         } catch (err) {
             console.error(err);
-            addToast('PDF Generation Failed', 'error');
+            addToast('PDF Generation Error', 'error');
         } finally {
             btn.innerHTML = originalText;
             btn.disabled = false;
-            if(window.lucide) lucide.createIcons();
         }
     }
-    
-    // Helper for cards
-    drawCard(doc, x, y, w, h, bgColor, accentColor, title, value) {
-        // Background
-        doc.setFillColor(...bgColor);
-        doc.setDrawColor(...accentColor);
-        doc.setLineWidth(0.5);
-        doc.roundedRect(x, y, w, h, 3, 3, 'FD');
-    
-        // Title
+
+    drawFooter(doc, pageNum, totalPages) {
+        const h = doc.internal.pageSize.getHeight();
+        const w = doc.internal.pageSize.getWidth();
+        
+        doc.setDrawColor(226, 232, 240);
+        doc.line(15, h-12, w-15, h-12);
+
         doc.setFontSize(8);
-        doc.setTextColor(...accentColor);
-        doc.setFont('helvetica', 'bold');
-        doc.text(title, x + 5, y + 8);
-    
-        // Value
-        doc.setFontSize(14);
-        doc.setTextColor(30, 41, 59);
-        doc.text(`Rs. ${value.toLocaleString('en-IN')}`, x + 5, y + 22);
+        doc.setTextColor(150);
+        doc.setFont('helvetica', 'normal');
+        
+        doc.text('Expense Manager Pro', 15, h - 7);
+        doc.text(`Page ${pageNum} of ${totalPages}`, w / 2, h - 7, {align: 'center'});
+        doc.text('thesumitdev.in', w - 15, h - 7, {align: 'right'});
     }
 }
 
@@ -676,13 +716,11 @@ function switchTab(tab) {
     if(tab === 'income') {
         incForm.classList.remove('hidden');
         expForm.classList.add('hidden');
-        
         tabInc.className = 'py-2.5 rounded-lg text-sm font-bold transition-all duration-200 flex items-center justify-center gap-2 shadow-sm bg-white text-emerald-600 scale-105';
         tabExp.className = 'py-2.5 rounded-lg text-sm font-bold transition-all duration-200 flex items-center justify-center gap-2 text-slate-500 hover:text-slate-700';
     } else {
         incForm.classList.add('hidden');
         expForm.classList.remove('hidden');
-        
         tabInc.className = 'py-2.5 rounded-lg text-sm font-bold transition-all duration-200 flex items-center justify-center gap-2 text-slate-500 hover:text-slate-700';
         tabExp.className = 'py-2.5 rounded-lg text-sm font-bold transition-all duration-200 flex items-center justify-center gap-2 shadow-sm bg-white text-rose-600 scale-105';
     }

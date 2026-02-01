@@ -459,177 +459,211 @@ class ExpenseTracker {
         });
     }
 
+    // --- ENHANCED PDF GENERATION LOGIC ---
     async generateEnhancedPDF() {
         const btn = document.getElementById('generateData');
         const originalText = btn.innerHTML;
-        btn.innerHTML = '<i data-lucide="loader" class="animate-spin w-4 h-4"></i> Generating...';
-        if(window.lucide) lucide.createIcons();
+        btn.innerHTML = '<i data-lucide="loader" class="animate-spin w-4 h-4"></i> Designing PDF...';
         btn.disabled = true;
-
+        if(window.lucide) lucide.createIcons();
+    
         try {
             const { jsPDF } = window.jspdf;
-            const doc = new jsPDF('p', 'pt', 'a4');
-            const pageWidth = doc.internal.pageSize.getWidth();
-            const pageHeight = doc.internal.pageSize.getHeight();
-            const left = 40, right = 40, usableWidth = pageWidth - left - right;
-            let y = 50;
-
+            const doc = new jsPDF('p', 'mm', 'a4'); // A4 size: 210 x 297 mm
+            
+            // --- Design Constants ---
+            const colors = {
+                primary: [79, 70, 229],   // Indigo 600
+                primaryBg: [238, 242, 255], // Indigo 50
+                success: [16, 185, 129],  // Emerald 500
+                successBg: [236, 253, 245], // Emerald 50
+                danger: [244, 63, 94],    // Rose 500
+                dangerBg: [255, 241, 242],  // Rose 50
+                text: [30, 41, 59],       // Slate 800
+                textLight: [100, 116, 139], // Slate 500
+                white: [255, 255, 255],
+                border: [226, 232, 240]   // Slate 200
+            };
+    
+            const margin = 15;
+            let yPos = 0;
+    
+            // ==========================================
+            // PART 1: NEW BEAUTIFUL FIRST PAGE DESIGN
+            // ==========================================
+            
+            // --- Header Section ---
+            doc.setFillColor(...colors.primary);
+            doc.rect(0, 0, 210, 50, 'F'); // Header Banner
+    
+            doc.setTextColor(...colors.white);
+            doc.setFont('helvetica', 'bold');
+            doc.setFontSize(26);
+            doc.text('FINANCIAL REPORT', margin, 25);
+    
+            doc.setFont('helvetica', 'normal');
+            doc.setFontSize(12);
+            doc.setTextColor(224, 231, 255); // Lighter Indigo
+            const dateStr = new Date().toLocaleDateString('en-IN', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+            doc.text(`Generated on: ${dateStr}`, margin, 34);
+    
+            // Logo/Icon placeholder (Right side)
+            doc.setFillColor(255, 255, 255, 0.2);
+            doc.circle(185, 25, 12, 'F');
+            doc.setFontSize(16);
+            doc.text('$', 183, 27); // Simple currency symbol as logo
+    
+            yPos = 65;
+    
+            // --- Summary Cards ---
+            // Get Data
             const allMonthsData = this.getAllMonthsSummary();
             const currentKey = this.getCurrentMonthKey();
-            const monthlyData = allMonthsData.filter(m => m.monthKey === currentKey);
-
-            // --- Clean Header Style ---
-            doc.setFont('helvetica', 'bold'); 
-            doc.setFontSize(24); 
-            doc.setTextColor(79, 70, 229); // Indigo 600
-            doc.text('Expense Manager', pageWidth/2, y, {align:'center'});
-
-            y += 20; 
-            doc.setFont('helvetica', 'normal'); 
-            doc.setFontSize(11); 
-            doc.setTextColor(100, 116, 139); // Slate 500
-            doc.text('Financial Statement', pageWidth/2, y, {align:'center'});
-
-            y += 40;
+            const mData = allMonthsData.find(m => m.monthKey === currentKey) || { income: 0, expenses: 0, balance: 0, incomeTransactions: [], expenseTransactions: [], categories: {} };
+    
+            const cardWidth = 55;
+            const cardHeight = 30;
+            const gap = (210 - (margin * 2) - (cardWidth * 3)) / 2;
+    
+            // Card 1: Income
+            this.drawCard(doc, margin, yPos, cardWidth, cardHeight, colors.successBg, colors.success, 'TOTAL INCOME', mData.income);
             
-            // --- Summary Box (Light) ---
-            doc.setDrawColor(226, 232, 240); // Slate 200
-            doc.setLineWidth(1);
-            doc.setFillColor(248, 250, 252); // Slate 50
-            doc.roundedRect(left, y, usableWidth, 90, 4, 4, 'FD');
-
-            const totalInc = monthlyData.reduce((s,m)=>s+m.income,0);
-            const totalExp = monthlyData.reduce((s,m)=>s+m.expenses,0);
-            const netBal = totalInc - totalExp;
-
-            y += 25;
-            doc.setFont('helvetica', 'bold');
-            doc.setFontSize(14);
-            doc.setTextColor(30, 41, 59);
-            doc.text('Overview', pageWidth/2, y, {align:'center'});
-
-            y += 25;
-            doc.setFont('helvetica', 'normal');
-            doc.setFontSize(11);
-            doc.setTextColor(51, 65, 85);
-            doc.text(`Total Income: Rs. ${totalInc.toLocaleString('en-IN')}`, left + 30, y);
-            doc.text(`Total Expenses: Rs. ${totalExp.toLocaleString('en-IN')}`, pageWidth - right - 30, y, {align:'right'});
+            // Card 2: Expenses
+            this.drawCard(doc, margin + cardWidth + gap, yPos, cardWidth, cardHeight, colors.dangerBg, colors.danger, 'TOTAL EXPENSES', mData.expenses);
             
-            y += 20;
-            doc.setFont('helvetica', 'bold');
-            doc.setTextColor(netBal >= 0 ? 16 : 220, netBal >= 0 ? 185 : 38, netBal >= 0 ? 129 : 38); 
-            doc.text(`Net Balance: Rs. ${netBal.toLocaleString('en-IN')}`, pageWidth/2, y, {align:'center'});
-
-            doc.addPage(); y = 50;
-
-            // --- Charts ---
-            doc.setFont('helvetica', 'bold'); 
-            doc.setFontSize(16); 
-            doc.setTextColor(30, 41, 59);
-            doc.text('Spending Analysis', pageWidth/2, y, {align:'center'});
-            y += 30;
-
+            // Card 3: Balance
+            this.drawCard(doc, margin + (cardWidth + gap) * 2, yPos, cardWidth, cardHeight, colors.primaryBg, colors.primary, 'NET BALANCE', mData.balance);
+    
+            yPos += cardHeight + 15;
+    
+            // --- Chart Section ---
+            // Prepare Data
             const allCats = {};
-            monthlyData.forEach(m => {
-                Object.entries(m.categories).forEach(([cat, amt]) => {
-                    allCats[cat] = (allCats[cat] || 0) + amt;
+            if (mData.categories) {
+                Object.entries(mData.categories).forEach(([cat, amt]) => {
+                    allCats[cat] = amt;
                 });
-            });
-            const sortedAllCats = Object.entries(allCats).sort((a,b) => b[1] - a[1]);
-            const labels = sortedAllCats.map(x => x[0]);
-            const data = sortedAllCats.map(x => x[1]);
-
-            if(labels.length > 0) {
-                const chartImg = await this.getChartImage(labels, data);
-                const chartWidth = 300;
-                const chartHeight = 150; 
-                const xPos = (pageWidth - chartWidth) / 2;
-                
-                doc.addImage(chartImg, 'PNG', xPos, y, chartWidth, chartHeight);
-                y += chartHeight + 30;
-
-                doc.autoTable({
-                    startY: y,
-                    head: [['Category', 'Total Amount']],
-                    body: sortedAllCats.map(([c, a]) => [c, `Rs. ${a.toLocaleString('en-IN')}`]),
-                    theme: 'grid',
-                    headStyles: { fillColor: [79, 70, 229], halign: 'center' }, // Indigo
-                    columnStyles: { 1: { halign: 'right', fontStyle: 'bold' } },
-                    margin: { left, right },
-                    styles: { textColor: [51, 65, 85] }
-                });
-                y = doc.lastAutoTable.finalY + 40;
+            }
+            const sortedCats = Object.entries(allCats).sort((a,b) => b[1] - a[1]);
+            
+            if (sortedCats.length > 0) {
+                 doc.setFont('helvetica', 'bold');
+                 doc.setFontSize(14);
+                 doc.setTextColor(...colors.text);
+                 doc.text('Spending Breakdown', margin, yPos);
+                 yPos += 10;
+    
+                 // Generate High-Res Chart Image
+                 const labels = sortedCats.map(x => x[0]);
+                 const data = sortedCats.map(x => x[1]);
+                 const chartImg = await this.getChartImage(labels, data); // Existing method returns Base64
+                 
+                 // Center Chart
+                 const imgWidth = 100;
+                 const imgHeight = 50; 
+                 const xCent = (210 - imgWidth) / 2;
+                 doc.addImage(chartImg, 'PNG', xCent, yPos, imgWidth, imgHeight);
+                 
+                 yPos += imgHeight + 20;
             } else {
-                doc.setFont('helvetica', 'italic');
-                doc.setFontSize(12);
-                doc.setTextColor(100);
-                doc.text("No data available.", pageWidth/2, y, {align:'center'});
-                y += 40;
+                 yPos += 20;
+                 doc.setFontSize(10);
+                 doc.setTextColor(...colors.textLight);
+                 doc.text('(No expense data to visualize)', margin, yPos);
+                 yPos += 10;
             }
 
-            // --- Detailed Data ---
-            monthlyData.forEach((m, idx) => {
-                if(y > pageHeight - 100) { doc.addPage(); y = 50; }
+            // ==========================================
+            // PART 2: ORIGINAL TABLE DESIGN (Next Pages)
+            // ==========================================
+            
+            // We use the original filtered data logic
+            const monthlyData = allMonthsData.filter(m => m.monthKey === currentKey);
+
+            monthlyData.forEach((m) => {
+                // Ensure we have space, otherwise add page
+                if(yPos > 250) { doc.addPage(); yPos = 20; }
 
                 doc.setFont('helvetica', 'bold');
                 doc.setFontSize(14);
                 doc.setTextColor(79, 70, 229);
-                doc.text(m.month, left, y);
+                doc.text(m.month, margin, yPos);
                 
                 doc.setFontSize(10);
                 doc.setTextColor(100, 116, 139);
-                doc.text(`Balance: Rs. ${m.balance.toLocaleString('en-IN')}`, pageWidth - right, y, {align:'right'});
+                doc.text(`Balance: Rs. ${m.balance.toLocaleString('en-IN')}`, 210 - margin, yPos, {align:'right'});
 
-                y += 15;
+                yPos += 10;
 
-                // --- ADDED DATE TO INCOME TABLE ---
+                // --- ORIGINAL INCOME TABLE STYLE ---
                 if (m.incomeTransactions.length > 0) {
                     doc.autoTable({
-                        startY: y,
-                        head: [['Date', 'Income Source', 'Description', 'Amount']], // Added Date Header
+                        startY: yPos,
+                        head: [['Date', 'Income Source', 'Description', 'Amount']], 
                         body: m.incomeTransactions.map(t => [
-                            t.date, // Added Date Value
+                            t.date, 
                             t.category, 
                             t.description || '', 
                             `Rs. ${t.amount.toLocaleString('en-IN')}`
                         ]),
-                        theme: 'striped',
-                        headStyles: { fillColor: [16, 185, 129] }, // Emerald
-                        margin: { left, right }
+                        theme: 'striped', // Original Theme
+                        headStyles: { fillColor: [16, 185, 129] }, // Original Emerald Color
+                        margin: { left: margin, right: margin }
                     });
-                    y = doc.lastAutoTable.finalY + 15;
+                    yPos = doc.lastAutoTable.finalY + 15;
                 }
 
-                // --- ADDED DATE TO EXPENSE TABLE ---
+                // --- ORIGINAL EXPENSE TABLE STYLE ---
                 if (m.expenseTransactions.length > 0) {
                     doc.autoTable({
-                        startY: y,
-                        head: [['Date', 'Expense', 'Description', 'Amount']], // Added Date Header
+                        startY: yPos,
+                        head: [['Date', 'Expense', 'Description', 'Amount']], 
                         body: m.expenseTransactions.map(t => [
-                            t.date, // Added Date Value
+                            t.date, 
                             t.category, 
                             t.description || '', 
                             `Rs. ${t.amount.toLocaleString('en-IN')}`
                         ]),
-                        theme: 'striped',
-                        headStyles: { fillColor: [244, 63, 94] }, // Rose
-                        margin: { left, right }
+                        theme: 'striped', // Original Theme
+                        headStyles: { fillColor: [244, 63, 94] }, // Original Rose Color
+                        margin: { left: margin, right: margin }
                     });
-                    y = doc.lastAutoTable.finalY + 30;
+                    yPos = doc.lastAutoTable.finalY + 30;
                 }
             });
 
-            doc.save(`Financial_Report_${currentKey}.pdf`);
-            addToast('Report downloaded', 'success');
-
+            // Save
+            doc.save(`Report_${currentKey}.pdf`);
+            addToast('Professional Report Downloaded!', 'success');
+    
         } catch (err) {
             console.error(err);
-            addToast('Failed to generate PDF', 'error');
+            addToast('PDF Generation Failed', 'error');
         } finally {
             btn.innerHTML = originalText;
             btn.disabled = false;
             if(window.lucide) lucide.createIcons();
         }
+    }
+    
+    // Helper for cards
+    drawCard(doc, x, y, w, h, bgColor, accentColor, title, value) {
+        // Background
+        doc.setFillColor(...bgColor);
+        doc.setDrawColor(...accentColor);
+        doc.setLineWidth(0.5);
+        doc.roundedRect(x, y, w, h, 3, 3, 'FD');
+    
+        // Title
+        doc.setFontSize(8);
+        doc.setTextColor(...accentColor);
+        doc.setFont('helvetica', 'bold');
+        doc.text(title, x + 5, y + 8);
+    
+        // Value
+        doc.setFontSize(14);
+        doc.setTextColor(30, 41, 59);
+        doc.text(`Rs. ${value.toLocaleString('en-IN')}`, x + 5, y + 22);
     }
 }
 

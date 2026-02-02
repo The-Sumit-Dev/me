@@ -1,0 +1,1205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Learning Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6;
+            color: #1f2937;
+            overflow-x: hidden;
+            /* Padding bottom for mobile nav */
+            padding-bottom: 80px; 
+        }
+
+        @media (min-width: 1024px) {
+            body {
+                padding-bottom: 2rem;
+            }
+        }
+
+        .glass-sidebar {
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(10px);
+            border-radius: 40px;
+        }
+
+        .mobile-nav {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-top: 1px solid rgba(0,0,0,0.05);
+        }
+
+        .dashboard-card {
+            background: white;
+            border-radius: 24px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .dashboard-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        }
+
+        .stat-icon {
+            background: #f9fafb;
+            padding: 10px;
+            border-radius: 12px;
+        }
+
+        /* Updated Chart Styles for Beautiful Visuals */
+        .chart-bar-container {
+            position: relative;
+            display: flex;
+            align-items: flex-end;
+            justify-content: center;
+            height: 100%;
+            width: 100%;
+            border-radius: 12px 12px 0 0;
+            overflow: visible; /* Allow tooltips */
+        }
+
+        .view-transition {
+            transition: opacity 0.3s ease, transform 0.3s ease;
+        }
+
+        .hidden-view {
+            display: none;
+            opacity: 0;
+            transform: translateY(10px);
+        }
+
+        .active-nav {
+            color: #059669;
+            background: #ecfdf5;
+            padding: 10px;
+            border-radius: 12px;
+        }
+        
+        /* Mobile Nav Active State */
+        .active-mobile-nav {
+            color: #059669;
+        }
+
+        /* Priority Colors */
+        .priority-high { color: #ef4444; background: #fee2e2; }
+        .priority-medium { color: #f59e0b; background: #fef3c7; }
+        .priority-low { color: #3b82f6; background: #dbeafe; }
+
+        /* Classroom Attendance Styles */
+        .attendance-present { color: #10b981; }
+        .attendance-absent { color: #ef4444; }
+        .attendance-holiday { color: #9ca3af; }
+
+        .dot-present { background-color: #10b981; }
+        .dot-absent { background-color: #ef4444; }
+        .dot-holiday { background-color: #9ca3af; }
+
+        /* Brand Logo Styling */
+        .brand-logo-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, #111827 0%, #1f2937 100%);
+            color: white;
+            font-weight: 800;
+            border-radius: 50%;
+            width: 32px;
+            height: 32px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.2);
+            font-size: 0.8rem;
+            overflow: hidden;
+            flex-shrink: 0;
+        }
+
+        .brand-logo-container img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        
+        .brand-logo-lg {
+            width: 56px;
+            height: 56px;
+            font-size: 1.2rem;
+        }
+
+        /* Improved Live Card Gradient */
+        .live-card-bg {
+            background: linear-gradient(165deg, #ffffff 0%, #f0fdf4 100%);
+        }
+
+        .live-glow {
+            box-shadow: 0 0 20px rgba(16, 185, 129, 0.2);
+        }
+
+        /* Custom scrollbar */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 10px; }
+
+        /* Modal Background Blur */
+        .modal-overlay {
+            background: rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(8px);
+        }
+
+        /* Welcome Popup Animations */
+        .welcome-anim {
+            animation: welcomeIn 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        @keyframes welcomeIn {
+            from { opacity: 0; transform: scale(0.9) translateY(20px); }
+            to { opacity: 1; transform: scale(1) translateY(0); }
+        }
+
+        .welcome-backdrop {
+            background: rgba(15, 23, 42, 0.6);
+            backdrop-filter: blur(12px);
+        }
+    </style>
+</head>
+<body class="p-4 md:p-8">
+
+    <!-- STARTUP WELCOME POPUP -->
+    <div id="startup-welcome" class="fixed inset-0 z-[200] flex items-center justify-center p-4 welcome-backdrop hidden">
+        <div class="bg-white max-w-md w-full rounded-[48px] p-10 shadow-2xl welcome-anim flex flex-col items-center text-center relative overflow-hidden">
+            <!-- Decorative circle -->
+            <div class="absolute -top-10 -right-10 w-40 h-40 bg-emerald-50 rounded-full"></div>
+            <div class="absolute -bottom-10 -left-10 w-40 h-40 bg-emerald-50 rounded-full"></div>
+
+            <div class="relative mb-8">
+                <div class="w-32 h-32 rounded-full border-[6px] border-white shadow-2xl overflow-hidden bg-emerald-50">
+                    <img id="welcome-img-display" src="https://api.dicebear.com/7.x/avataaars/svg?seed=Student" alt="User" class="w-full h-full object-cover">
+                </div>
+                <div class="absolute -bottom-2 -right-2 w-10 h-10 bg-emerald-500 rounded-full flex items-center justify-center text-white shadow-lg border-4 border-white">
+                    <i class="fa-solid fa-check text-xs"></i>
+                </div>
+            </div>
+
+            <div class="relative z-10">
+                <h3 class="text-gray-400 font-bold text-xs uppercase tracking-[0.2em] mb-2">Welcome Back</h3>
+                <h2 class="text-4xl font-extrabold text-gray-900 tracking-tight mb-4">Hello, <span id="welcome-name-display" class="text-emerald-600">Student</span>!</h2>
+                <p class="text-gray-500 text-sm leading-relaxed mb-10 px-4">
+                    Great to see you again! You have <span id="welcome-pending-count" class="font-bold text-emerald-600">0</span> classes waiting for you today. Let's make it productive!
+                </p>
+                <button onclick="closeWelcome()" class="bg-emerald-600 hover:bg-emerald-700 text-white w-full py-5 rounded-[24px] font-bold text-lg shadow-xl shadow-emerald-100 transform active:scale-95 transition-all">
+                    Get Started <i class="fa-solid fa-arrow-right ml-2"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="max-w-[1400px] mx-auto flex gap-6">
+        
+        <!-- Sidebar Navigation (Desktop) -->
+        <nav class="hidden lg:flex flex-col items-center py-8 glass-sidebar w-20 fixed h-[90vh] left-8 shadow-sm z-50">
+            <div class="mb-10 text-emerald-600">
+                <i class="fa-solid fa-leaf text-3xl"></i>
+            </div>
+            <div class="flex flex-col gap-6 text-gray-400">
+                <button onclick="showView('home')" id="nav-home" class="hover:text-emerald-600 transition-colors active-nav" title="Home">
+                    <i class="fa-solid fa-house text-xl"></i>
+                </button>
+                <button onclick="showView('classes')" id="nav-classes" class="hover:text-emerald-600 transition-colors" title="My Classes">
+                    <i class="fa-solid fa-book text-xl"></i>
+                </button>
+                <button onclick="showView('classroom')" id="nav-classroom" class="hover:text-emerald-600 transition-colors" title="Classrooms">
+                    <i class="fa-solid fa-chalkboard-user text-xl"></i>
+                </button>
+                <button onclick="showView('tasks')" id="nav-tasks" class="hover:text-emerald-600 transition-colors" title="My Tasks">
+                    <i class="fa-solid fa-list-check text-xl"></i>
+                </button>
+                <button onclick="showView('study')" id="nav-study" class="hover:text-emerald-600 transition-colors" title="Study Analytics">
+                    <i class="fa-solid fa-chart-line text-xl"></i>
+                </button>
+                <button onclick="showView('settings')" id="nav-settings" class="hover:text-emerald-600 transition-colors" title="Settings">
+                    <i class="fa-solid fa-gear text-xl"></i>
+                </button>
+            </div>
+        </nav>
+
+        <!-- Mobile Bottom Navigation (Visible only on mobile/tablet) -->
+        <div class="fixed bottom-0 left-0 w-full mobile-nav z-50 lg:hidden flex justify-around items-center py-4 px-2 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
+            <button onclick="showView('home')" id="mob-nav-home" class="flex flex-col items-center gap-1 text-gray-400 hover:text-emerald-600 active-mobile-nav">
+                <i class="fa-solid fa-house text-lg"></i>
+                <span class="text-[10px] font-medium">Home</span>
+            </button>
+            <button onclick="showView('classes')" id="mob-nav-classes" class="flex flex-col items-center gap-1 text-gray-400 hover:text-emerald-600">
+                <i class="fa-solid fa-book text-lg"></i>
+                <span class="text-[10px] font-medium">Classes</span>
+            </button>
+            <button onclick="showView('tasks')" id="mob-nav-tasks" class="flex flex-col items-center gap-1 text-gray-400 hover:text-emerald-600">
+                <i class="fa-solid fa-list-check text-lg"></i>
+                <span class="text-[10px] font-medium">Tasks</span>
+            </button>
+            <button onclick="showView('study')" id="mob-nav-study" class="flex flex-col items-center gap-1 text-gray-400 hover:text-emerald-600">
+                <i class="fa-solid fa-chart-line text-lg"></i>
+                <span class="text-[10px] font-medium">Study</span>
+            </button>
+            <button onclick="showView('settings')" id="mob-nav-settings" class="flex flex-col items-center gap-1 text-gray-400 hover:text-emerald-600">
+                <i class="fa-solid fa-gear text-lg"></i>
+                <span class="text-[10px] font-medium">Settings</span>
+            </button>
+        </div>
+
+        <!-- Main Content Wrapper -->
+        <main class="w-full lg:ml-28">
+            
+            <!-- Header Section -->
+            <header class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
+                <div>
+                    <h1 class="text-3xl font-bold">Hello, <span id="greeting-name-display">Student</span>!</h1>
+                    <p class="text-gray-500" id="header-subtitle">Track your classes and study progress!</p>
+                </div>
+                
+                <div class="flex items-center gap-4 w-full md:w-auto">
+                    <div class="relative w-full md:w-80">
+                        <i class="fa-solid fa-magnifying-glass absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"></i>
+                        <input type="text" placeholder="Search anything..." class="w-full pl-12 pr-4 py-3 rounded-2xl bg-white border-none focus:ring-2 focus:ring-emerald-500 shadow-sm outline-none">
+                    </div>
+                    <button onclick="showView('settings')" class="p-3 bg-white rounded-2xl text-gray-600 shadow-sm relative">
+                        <i class="fa-regular fa-bell"></i>
+                        <span class="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full"></span>
+                    </button>
+                </div>
+            </header>
+
+            <!-- VIEW: HOME -->
+            <div id="view-home" class="view-transition">
+                <!-- Top Stats Row -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-6 mb-8">
+                    <div onclick="showView('classes')" class="dashboard-card p-6 flex justify-between items-start cursor-pointer group">
+                        <div>
+                            <div class="flex items-center gap-2 text-gray-500 mb-4">
+                                <i class="fa-solid fa-calendar-check stat-icon group-hover:bg-emerald-50 group-hover:text-emerald-600 transition-colors"></i>
+                                <span class="font-medium">Classes Pending</span>
+                            </div>
+                            <h2 class="text-4xl font-bold mb-1" id="stat-pending-classes">0</h2>
+                            <p class="text-xs text-gray-400 bg-gray-100 px-2 py-1 rounded inline-block">Click to Manage →</p>
+                        </div>
+                        <i class="fa-solid fa-chevron-right text-gray-300 group-hover:text-emerald-500 transition-colors"></i>
+                    </div>
+
+                    <div class="dashboard-card p-6 flex justify-between items-start">
+                        <div>
+                            <div class="flex items-center gap-2 text-gray-500 mb-4">
+                                <i class="fa-solid fa-check-double stat-icon text-emerald-600"></i>
+                                <span class="font-medium">Classes Done</span>
+                            </div>
+                            <h2 class="text-4xl font-bold mb-1" id="stat-completed-classes">0</h2>
+                        </div>
+                    </div>
+
+                    <div class="dashboard-card p-6 flex justify-between items-start">
+                        <div>
+                            <div class="flex items-center gap-2 text-gray-500 mb-4">
+                                <i class="fa-solid fa-fire stat-icon text-orange-500"></i>
+                                <span class="font-medium">Streak</span>
+                            </div>
+                            <h2 class="text-4xl font-bold mb-1" id="stat-streak">0 <span class="text-lg font-normal text-gray-400">days</span></h2>
+                        </div>
+                    </div>
+
+                    <div onclick="showView('study')" class="dashboard-card p-6 flex justify-between items-start cursor-pointer group">
+                        <div>
+                            <div class="flex items-center gap-2 text-gray-500 mb-4">
+                                <i class="fa-regular fa-clock stat-icon group-hover:text-emerald-600 transition-colors"></i>
+                                <span class="font-medium">Total Study</span>
+                            </div>
+                            <h2 class="text-4xl font-bold mb-1"><span id="stat-total-study">0</span> <span class="text-lg font-normal text-gray-400">hrs</span></h2>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-12 gap-6">
+                    <div class="col-span-12 xl:col-span-8 flex flex-col gap-6">
+                        <!-- Weekly Study Hours Chart -->
+                        <div class="dashboard-card p-8">
+                            <div class="flex justify-between items-center mb-8">
+                                <h3 class="font-bold text-lg">Weekly Study Hours</h3>
+                                <button onclick="showView('study')" class="text-xs font-bold text-emerald-600 bg-emerald-50 px-3 py-1 rounded-lg hover:bg-emerald-100">Update Hours</button>
+                            </div>
+                            <!-- Updated Beautiful Chart Container -->
+                            <div id="home-chart-container" class="h-48 flex items-end justify-between px-4 relative mt-10"></div>
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 items-stretch">
+                            <!-- LIVE CLASS CARD -->
+                            <div class="dashboard-card p-8 flex flex-col justify-between h-full min-h-[440px] relative overflow-hidden live-card-bg">
+                                <div class="flex justify-between items-center mb-8 relative z-10">
+                                    <div class="flex items-center gap-3">
+                                        <div class="brand-logo-container brand-logo-lg live-glow" id="live-header-logo">PW</div>
+                                        <h3 class="font-bold text-xl tracking-tight text-gray-800">Live Session</h3>
+                                    </div>
+                                    <div class="flex flex-col items-end">
+                                        <span id="live-badge" class="text-[10px] bg-red-500 px-3 py-1 rounded-full text-white font-bold uppercase shadow-sm">Upcoming</span>
+                                    </div>
+                                </div>
+                                <div id="live-class-content" class="flex-1 flex flex-col justify-center relative z-10"></div>
+                            </div>
+                            
+                            <!-- CLASSROOM TRACKER MINI CALENDAR -->
+                            <div class="dashboard-card p-8 flex flex-col h-full min-h-[440px]">
+                                <div class="flex justify-between items-center mb-6">
+                                    <h3 class="font-bold text-xl tracking-tight">Class Tracker</h3>
+                                    <div class="flex items-center gap-2">
+                                        <button onclick="switchHomeClassroom(-1)" class="w-10 h-10 rounded-full bg-gray-50 flex items-center justify-center text-gray-400 hover:text-emerald-600 transition-all"><i class="fa-solid fa-chevron-left text-xs"></i></button>
+                                        <button onclick="switchHomeClassroom(1)" class="w-10 h-10 rounded-full bg-gray-50 flex items-center justify-center text-gray-400 hover:text-emerald-600 transition-all"><i class="fa-solid fa-chevron-right text-xs"></i></button>
+                                    </div>
+                                </div>
+                                <div id="home-classroom-preview" class="flex-1 overflow-y-auto"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Right Column: Unified Profile & Tasks Section -->
+                    <div class="col-span-12 xl:col-span-4">
+                        <div class="dashboard-card overflow-hidden flex flex-col h-full min-h-[600px]">
+                            <!-- Profile Section -->
+                            <div class="p-8 flex flex-col items-center text-center">
+                                <div class="flex justify-between w-full items-center mb-6">
+                                    <h3 class="font-bold text-sm text-gray-400 uppercase tracking-widest">User Profile</h3>
+                                    <button onclick="showView('settings')" class="text-gray-300 hover:text-emerald-600 transition-colors" title="Settings"><i class="fa-solid fa-gear"></i></button>
+                                </div>
+                                <div class="w-24 h-24 rounded-full overflow-hidden mb-4 border-4 border-white shadow-xl bg-emerald-50">
+                                    <img id="profile-img-display" src="https://api.dicebear.com/7.x/avataaars/svg?seed=Student" alt="avatar" class="w-full h-full object-cover">
+                                </div>
+                                <h4 id="profile-name-display" class="font-bold text-xl mb-1">Mostafiz Hossin</h4>
+                                <p id="profile-sub-display" class="text-sm text-gray-400 mb-8">Bengal College • 20 years</p>
+                                
+                                <div class="w-full bg-gray-50 rounded-3xl p-6">
+                                    <div class="flex justify-between items-center mb-4">
+                                        <span class="text-xs font-bold" id="cal-month-year">April 2025</span>
+                                    </div>
+                                    <div id="mini-calendar-days" class="grid grid-cols-7 gap-1 text-[10px]"></div>
+                                </div>
+                            </div>
+
+                            <!-- Today's Tasks Section -->
+                            <div class="px-8"><hr class="border-gray-100"></div>
+                            <div class="p-8 flex-1 flex flex-col">
+                                <div class="flex justify-between items-center mb-6">
+                                    <h3 class="font-bold text-sm text-gray-400 uppercase tracking-widest">Today's Tasks</h3>
+                                    <button onclick="showView('tasks')" class="text-xs font-bold text-emerald-600 hover:underline">View All</button>
+                                </div>
+                                <div id="home-todo-list" class="space-y-4 overflow-y-auto max-h-[350px] pr-2"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- VIEW: CLASSES MANAGEMENT -->
+            <div id="view-classes" class="view-transition hidden-view">
+                <div class="mb-6 flex items-center justify-between">
+                    <div class="flex items-center gap-4">
+                        <button onclick="showView('home')" class="w-10 h-10 rounded-full bg-white shadow-sm flex items-center justify-center text-gray-400 hover:text-emerald-600 transition-colors"><i class="fa-solid fa-arrow-left"></i></button>
+                        <h2 class="text-2xl font-bold">Schedule & Classes</h2>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-12 gap-6">
+                    <div class="col-span-12 lg:col-span-4">
+                        <div class="dashboard-card p-6 sticky top-8">
+                            <h3 class="font-bold mb-6">Schedule Class</h3>
+                            <form id="add-class-form" class="space-y-4">
+                                <input type="text" id="class-name" required placeholder="Subject Name" class="w-full p-3 rounded-xl bg-gray-50 border-none outline-none focus:ring-2 focus:ring-emerald-500">
+                                <input type="text" id="class-topic" required placeholder="Topic/Chapter" class="w-full p-3 rounded-xl bg-gray-50 border-none outline-none focus:ring-2 focus:ring-emerald-500">
+                                <div class="grid grid-cols-1 gap-1">
+                                    <label class="text-[10px] font-bold text-gray-400 uppercase ml-1">Category</label>
+                                    <select id="class-category" class="w-full p-3 rounded-xl bg-gray-50 border-none outline-none focus:ring-2 focus:ring-emerald-500">
+                                        <option value="live" selected>Live Class</option>
+                                        <option value="regular">Regular Class</option>
+                                    </select>
+                                </div>
+                                <div class="grid grid-cols-1 gap-1">
+                                    <label class="text-[10px] font-bold text-gray-400 uppercase ml-1">Date</label>
+                                    <input type="date" id="class-date" required class="w-full p-3 rounded-xl bg-gray-50 border-none outline-none focus:ring-2 focus:ring-emerald-500">
+                                </div>
+                                <div class="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label class="text-[10px] font-bold text-gray-400 uppercase ml-1 block mb-1">Time</label>
+                                        <input type="time" id="class-time" required class="w-full p-3 rounded-xl bg-gray-50 border-none outline-none focus:ring-2 focus:ring-emerald-500">
+                                    </div>
+                                    <div>
+                                        <label class="text-[10px] font-bold text-gray-400 uppercase ml-1 block mb-1">Duration</label>
+                                        <input type="number" id="class-duration" placeholder="Mins" class="w-full p-3 rounded-xl bg-gray-50 border-none outline-none focus:ring-2 focus:ring-emerald-500">
+                                    </div>
+                                </div>
+                                <button type="submit" class="w-full bg-emerald-600 text-white py-3 rounded-xl font-bold hover:bg-emerald-700 transition-colors">Add to Schedule</button>
+                            </form>
+                        </div>
+                    </div>
+                    <div class="col-span-12 lg:col-span-8">
+                        <div id="classes-list-container" class="space-y-4"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- VIEW: CLASSROOMS -->
+            <div id="view-classroom" class="view-transition hidden-view">
+                <div class="mb-6 flex items-center justify-between">
+                    <div class="flex items-center gap-4">
+                        <button onclick="showView('home')" class="w-10 h-10 rounded-full bg-white shadow-sm flex items-center justify-center text-gray-400 hover:text-emerald-600 transition-colors"><i class="fa-solid fa-arrow-left"></i></button>
+                        <div class="flex items-center gap-3">
+                            <button id="nav-prev-room" onclick="switchClassroom(-1)" class="hidden w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-gray-400 hover:bg-emerald-50 hover:text-emerald-600"><i class="fa-solid fa-chevron-left text-xs"></i></button>
+                            <h2 class="text-2xl font-bold" id="classroom-title">My Classrooms</h2>
+                            <button id="nav-next-room" onclick="switchClassroom(1)" class="hidden w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-gray-400 hover:bg-emerald-50 hover:text-emerald-600"><i class="fa-solid fa-chevron-right text-xs"></i></button>
+                        </div>
+                    </div>
+                    <button id="btn-back-to-list" onclick="closeCalendar()" class="hidden px-4 py-2 bg-white rounded-xl shadow-sm font-bold text-emerald-600 hover:bg-emerald-50">Back to List</button>
+                </div>
+                <div id="classroom-main-view" class="grid grid-cols-12 gap-6">
+                    <div class="col-span-12 lg:col-span-4">
+                        <div class="dashboard-card p-6 sticky top-8">
+                            <h3 class="font-bold mb-6">Create Classroom</h3>
+                            <form id="add-classroom-form" class="space-y-4">
+                                <input type="text" id="classroom-name" required placeholder="Class Name" class="w-full p-3 rounded-xl bg-gray-50 border-none outline-none focus:ring-2 focus:ring-emerald-500">
+                                <input type="text" id="classroom-desc" placeholder="Short Description" class="w-full p-3 rounded-xl bg-gray-50 border-none outline-none focus:ring-2 focus:ring-emerald-500">
+                                <button type="submit" class="w-full bg-emerald-600 text-white py-3 rounded-xl font-bold hover:bg-emerald-700 transition-colors">Create Classroom</button>
+                            </form>
+                        </div>
+                    </div>
+                    <div class="col-span-12 lg:col-span-8">
+                        <div id="classroom-grid" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
+                    </div>
+                </div>
+                <div id="classroom-calendar-view" class="hidden">
+                    <div class="dashboard-card p-10">
+                        <div class="flex flex-col md:flex-row justify-between items-center mb-10 gap-6">
+                            <div class="flex items-center gap-6">
+                                <button onclick="changeCalendarMonth(-1)" class="w-12 h-12 rounded-full bg-gray-50 flex items-center justify-center hover:bg-emerald-50 shadow-sm"><i class="fa-solid fa-chevron-left"></i></button>
+                                <h3 id="calendar-header-title" class="text-2xl font-bold min-w-[200px] text-center tracking-tight">Month Year</h3>
+                                <button onclick="changeCalendarMonth(1)" class="w-12 h-12 rounded-full bg-gray-50 flex items-center justify-center hover:bg-emerald-50 shadow-sm"><i class="fa-solid fa-chevron-right"></i></button>
+                            </div>
+                            <div class="flex items-center gap-8 bg-gray-50 px-6 py-4 rounded-[28px]">
+                                <div class="flex items-center gap-2 text-sm font-bold"><i class="fa-solid fa-check attendance-present"></i> Present</div>
+                                <div class="flex items-center gap-2 text-sm font-bold"><i class="fa-solid fa-xmark attendance-absent"></i> Absent</div>
+                                <div class="flex items-center gap-2 text-sm font-bold"><i class="fa-solid fa-umbrella attendance-holiday"></i> Holiday</div>
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-7 gap-4 mb-4 text-center text-sm font-bold text-gray-400 uppercase tracking-widest">
+                            <span>Sun</span><span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span>
+                        </div>
+                        <div id="attendance-calendar-grid" class="grid grid-cols-7 gap-3 sm:gap-6"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- VIEW: TASKS -->
+            <div id="view-tasks" class="view-transition hidden-view">
+                <div class="mb-6 flex items-center justify-between">
+                    <div class="flex items-center gap-4">
+                        <button onclick="showView('home')" class="w-10 h-10 rounded-full bg-white shadow-sm flex items-center justify-center text-gray-400 hover:text-emerald-600 transition-colors"><i class="fa-solid fa-arrow-left"></i></button>
+                        <h2 class="text-2xl font-bold">Task Manager</h2>
+                    </div>
+                </div>
+                <div class="grid grid-cols-12 gap-6">
+                    <div class="col-span-12 lg:col-span-4">
+                        <div class="dashboard-card p-6 sticky top-8">
+                            <h3 class="font-bold mb-6">Create New Task</h3>
+                            <form id="add-task-form" class="space-y-4">
+                                <input type="text" id="task-title" required placeholder="Task Title" class="w-full p-3 rounded-xl bg-gray-50 border-none outline-none focus:ring-2 focus:ring-emerald-500">
+                                <div class="grid grid-cols-2 gap-4">
+                                    <select id="task-priority" class="w-full p-3 rounded-xl bg-gray-50 border-none outline-none focus:ring-2 focus:ring-emerald-500">
+                                        <option value="high">High</option>
+                                        <option value="medium" selected>Medium</option>
+                                        <option value="low">Low</option>
+                                    </select>
+                                    <input type="date" id="task-date" required class="w-full p-3 rounded-xl bg-gray-50 border-none outline-none focus:ring-2 focus:ring-emerald-500">
+                                </div>
+                                <button type="submit" class="w-full bg-emerald-600 text-white py-3 rounded-xl font-bold hover:bg-emerald-700 shadow-lg shadow-emerald-100">Save Task</button>
+                            </form>
+                        </div>
+                    </div>
+                    <div class="col-span-12 lg:col-span-8">
+                        <div class="dashboard-card p-6">
+                            <div class="flex flex-col sm:flex-row justify-between items-center gap-4 mb-8">
+                                <h3 class="font-bold">My Planner</h3>
+                                <div class="flex p-1 bg-gray-100 rounded-xl">
+                                    <button onclick="setTaskFilter('yesterday')" id="filter-yesterday" class="px-4 py-2 text-xs font-bold rounded-lg transition-colors">Yesterday</button>
+                                    <button onclick="setTaskFilter('today')" id="filter-today" class="px-4 py-2 text-xs font-bold rounded-lg transition-colors bg-white shadow-sm text-emerald-600">Today</button>
+                                    <button onclick="setTaskFilter('tomorrow')" id="filter-tomorrow" class="px-4 py-2 text-xs font-bold rounded-lg transition-colors">Tomorrow</button>
+                                </div>
+                            </div>
+                            <div id="tasks-list-container" class="space-y-4"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- VIEW: STUDY -->
+            <div id="view-study" class="view-transition hidden-view">
+                <div class="mb-6 flex items-center justify-between">
+                    <div class="flex items-center gap-4">
+                        <button onclick="showView('home')" class="w-10 h-10 rounded-full bg-white shadow-sm flex items-center justify-center text-gray-400 hover:text-emerald-600 transition-colors"><i class="fa-solid fa-arrow-left"></i></button>
+                        <h2 class="text-2xl font-bold">Study Analytics</h2>
+                    </div>
+                </div>
+                <div class="grid grid-cols-12 gap-6">
+                    <div class="col-span-12 lg:col-span-4">
+                        <div class="dashboard-card p-6">
+                            <h3 class="font-bold mb-4">Log Today's Hours</h3>
+                            <form id="study-hours-form" class="space-y-4">
+                                <select id="study-day" class="w-full p-3 rounded-xl bg-gray-50 border-none outline-none focus:ring-2 focus:ring-emerald-500">
+                                    <option value="mon">Monday</option><option value="tue">Tuesday</option><option value="wed">Wednesday</option>
+                                    <option value="thu">Thursday</option><option value="fri">Friday</option><option value="sat">Saturday</option><option value="sun">Sunday</option>
+                                </select>
+                                <input type="number" id="study-amount" min="0" max="24" step="0.5" required placeholder="0.0 hours" class="w-full p-3 rounded-xl bg-gray-50 border-none outline-none focus:ring-2 focus:ring-emerald-500">
+                                <button type="submit" class="w-full bg-emerald-600 text-white py-3 rounded-xl font-bold hover:bg-emerald-700 transition-all shadow-lg shadow-emerald-100">Update Study Log</button>
+                            </form>
+                        </div>
+                    </div>
+                    <div class="col-span-12 lg:col-span-8">
+                        <div class="dashboard-card p-8">
+                            <div class="flex justify-between items-center mb-8">
+                                <h3 class="font-bold">Weekly Performance</h3>
+                                <span class="text-2xl font-bold text-emerald-600"><span id="study-total-display">0</span> hrs</span>
+                            </div>
+                            <!-- Updated Beautiful Chart Container -->
+                            <div id="study-page-chart" class="h-64 flex items-end justify-between px-6 relative mt-12 border-b border-gray-100"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- VIEW: SETTINGS -->
+            <div id="view-settings" class="view-transition hidden-view">
+                <div class="mb-6 flex items-center justify-between">
+                    <div class="flex items-center gap-4">
+                        <button onclick="showView('home')" class="w-10 h-10 rounded-full bg-white shadow-sm flex items-center justify-center text-gray-400 hover:text-emerald-600 transition-colors"><i class="fa-solid fa-arrow-left"></i></button>
+                        <h2 class="text-2xl font-bold">App Settings</h2>
+                    </div>
+                </div>
+                <div class="grid grid-cols-12 gap-6">
+                    <div class="col-span-12 lg:col-span-4">
+                        <div class="dashboard-card p-8 h-full">
+                            <h3 class="font-bold text-lg mb-6 border-b pb-4">Profile & Experience</h3>
+                            <form id="settings-profile-form" class="space-y-5">
+                                <div class="flex items-center gap-6 mb-6">
+                                    <div class="w-20 h-20 rounded-full bg-gray-100 overflow-hidden relative group cursor-pointer" onclick="document.getElementById('profile-img-upload').click()">
+                                        <img id="settings-profile-preview" src="https://api.dicebear.com/7.x/avataaars/svg?seed=Student" alt="Preview" class="w-full h-full object-cover">
+                                        <div class="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"><i class="fa-solid fa-camera text-white"></i></div>
+                                    </div>
+                                    <div><input type="file" id="profile-img-upload" class="hidden" accept="image/*" onchange="handleProfileImgUpload(event)"></div>
+                                </div>
+                                <input type="text" id="setting-name" placeholder="Full Name" class="w-full p-3 rounded-xl bg-gray-50 border-none outline-none focus:ring-2 focus:ring-emerald-500">
+                                <input type="number" id="setting-age" placeholder="Age" class="w-full p-3 rounded-xl bg-gray-50 border-none outline-none focus:ring-2 focus:ring-emerald-500">
+                                <div class="mt-6">
+                                    <label class="text-[10px] font-bold text-gray-400 uppercase ml-1 block mb-1">Live Room URL</label>
+                                    <input type="url" id="setting-live-url" placeholder="https://www.pw.live" class="w-full p-3 rounded-xl bg-gray-50 border-none outline-none focus:ring-2 focus:ring-emerald-500">
+                                </div>
+                                <button type="submit" class="w-full bg-emerald-600 text-white py-3 rounded-xl font-bold hover:bg-emerald-700 shadow-lg shadow-emerald-100">Save Changes</button>
+                            </form>
+                        </div>
+                    </div>
+                    <div class="col-span-12 lg:col-span-4">
+                        <div class="dashboard-card p-8 h-full">
+                            <h3 class="font-bold text-lg mb-6 border-b pb-4">Branding Assets</h3>
+                            <div class="space-y-6">
+                                <div class="flex items-center justify-between p-4 bg-gray-50 rounded-2xl">
+                                    <div class="flex items-center gap-4">
+                                        <div id="settings-brand-preview" class="w-12 h-12 rounded-full bg-gray-900 flex items-center justify-center text-white font-bold overflow-hidden">PW</div>
+                                        <p class="font-bold text-sm">Main Logo</p>
+                                    </div>
+                                    <button onclick="triggerLogoUpload()" class="px-4 py-2 bg-white text-emerald-600 rounded-xl text-xs font-bold shadow-sm">Upload</button>
+                                    <input type="file" id="logo-upload" class="hidden" accept="image/*" onchange="handleLogoUpload(event)">
+                                </div>
+                                <div class="flex items-center justify-between p-4 bg-gray-50 rounded-2xl">
+                                    <div class="flex items-center gap-4">
+                                        <div id="settings-radio-preview" class="w-12 h-12 rounded-full bg-white flex items-center justify-center text-emerald-600 overflow-hidden shadow-sm"><i class="fa-solid fa-tower-broadcast"></i></div>
+                                        <p class="font-bold text-sm">Live Card Icon</p>
+                                    </div>
+                                    <button onclick="triggerRadioUpload()" class="px-4 py-2 bg-white text-emerald-600 rounded-xl text-xs font-bold shadow-sm">Upload</button>
+                                    <input type="file" id="radio-upload" class="hidden" accept="image/*" onchange="handleRadioUpload(event)">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-span-12 lg:col-span-4">
+                        <div class="dashboard-card p-8 h-full">
+                            <h3 class="font-bold text-lg mb-6 border-b pb-4">Data & Privacy</h3>
+                            <div class="space-y-4">
+                                <p class="text-xs text-gray-400 mb-4">Backup your entire dashboard data.</p>
+                                <button onclick="exportData()" class="w-full bg-emerald-50 text-emerald-700 py-4 rounded-2xl font-bold flex items-center justify-center gap-3 hover:bg-emerald-100 transition-all">
+                                    <i class="fa-solid fa-file-export"></i> Export All Data (.json)
+                                </button>
+                                <button onclick="document.getElementById('import-file').click()" class="w-full bg-white border border-emerald-100 text-emerald-600 py-4 rounded-2xl font-bold flex items-center justify-center gap-3 hover:bg-emerald-50 transition-all shadow-sm">
+                                    <i class="fa-solid fa-file-import"></i> Import All Data (.json)
+                                </button>
+                                <input type="file" id="import-file" class="hidden" accept=".json" onchange="importData(event)">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Upcoming Classes Modal -->
+    <div id="upcoming-modal" class="hidden fixed inset-0 z-[100] flex items-center justify-center p-4 modal-overlay" onclick="hideUpcomingModal()">
+        <div class="bg-white w-full max-w-lg rounded-[32px] p-8 shadow-2xl overflow-hidden flex flex-col max-h-[80vh]" onclick="event.stopPropagation()">
+            <div class="flex justify-between items-center mb-6">
+                <div>
+                    <h3 class="text-2xl font-bold">Upcoming Live Classes</h3>
+                    <p class="text-gray-400 text-sm">Don't miss your scheduled sessions</p>
+                </div>
+                <button onclick="hideUpcomingModal()" class="w-10 h-10 rounded-full bg-gray-50 flex items-center justify-center text-gray-400 hover:text-red-500 transition-colors">
+                    <i class="fa-solid fa-times"></i>
+                </button>
+            </div>
+            <div id="upcoming-list-container" class="flex-1 overflow-y-auto space-y-4 pr-2"></div>
+        </div>
+    </div>
+
+    <!-- Notification -->
+    <div id="notification" class="fixed bottom-24 lg:bottom-8 right-8 bg-gray-900 text-white px-6 py-4 rounded-2xl shadow-2xl translate-y-28 opacity-0 transition-all duration-300 z-[100] flex items-center gap-3">
+        <div class="w-8 h-8 rounded-full bg-emerald-500 flex items-center justify-center"><i class="fa-solid fa-check text-white"></i></div>
+        <span id="notification-text" class="font-medium">Success!</span>
+    </div>
+
+    <script>
+        // --- Core State ---
+        let appData = {
+            classes: [],
+            tasks: [],
+            classrooms: [],
+            studyHours: { mon: 0, tue: 0, wed: 0, thu: 0, fri: 0, sat: 0, sun: 0 },
+            currentTaskFilter: 'today',
+            brandLogo: null, 
+            radioLogo: null,
+            profileName: "Mostafiz Hossin",
+            profileAge: 20,
+            profileImg: null,
+            liveRedirectUrl: "https://www.pw.live",
+            streakHistory: []
+        };
+
+        let activeClassroomId = null, homeActiveClassroomIdx = 0, calendarDate = new Date(), countdownInterval = null;
+
+        // --- Helpers ---
+        const format12h = (t) => { 
+            if (!t) return ""; 
+            const [h24, m] = t.split(':'); 
+            let h = parseInt(h24); 
+            const ampm = h >= 12 ? 'PM' : 'AM'; 
+            h = h % 12 || 12; 
+            return `${h.toString().padStart(2, '0')}:${m} ${ampm}`; 
+        };
+        const getFormattedDate = (off = 0) => { const d = new Date(); d.setDate(d.getDate() + off); return d.toISOString().split('T')[0]; };
+        
+        // Auto-set Date Inputs to Today
+        function initDateInputs() {
+            const today = getFormattedDate(0);
+            const taskDate = document.getElementById('task-date');
+            if(taskDate) taskDate.value = today;
+            
+            const classDate = document.getElementById('class-date');
+            if(classDate) classDate.value = today;
+        }
+
+        function calculateCurrentStreak() {
+            const hist = appData.streakHistory || []; if (!hist.length) return 0;
+            const today = getFormattedDate(0); let streak = 0, check = new Date();
+            if (!hist.includes(today)) check.setDate(check.getDate() - 1);
+            while (hist.includes(check.toISOString().split('T')[0])) { streak++; check.setDate(check.getDate() - 1); }
+            return streak;
+        }
+
+        function updateStreakHistory() {
+            const today = getFormattedDate(0), allComp = appData.classes.length > 0 && appData.classes.every(c => c.completed);
+            if (allComp) { if (!appData.streakHistory.includes(today)) appData.streakHistory.push(today); }
+            else appData.streakHistory = appData.streakHistory.filter(d => d !== today);
+        }
+
+        // --- Welcome Logic ---
+        function showWelcomePopup() {
+            const popup = document.getElementById('startup-welcome');
+            const nameDisp = document.getElementById('welcome-name-display');
+            const imgDisp = document.getElementById('welcome-img-display');
+            const pendDisp = document.getElementById('welcome-pending-count');
+
+            const pending = appData.classes.filter(c => !c.completed).length;
+            
+            nameDisp.innerText = appData.profileName.split(' ')[0];
+            pendDisp.innerText = pending;
+            if (appData.profileImg) {
+                imgDisp.src = appData.profileImg;
+            } else {
+                imgDisp.src = `https://api.dicebear.com/7.x/avataaars/svg?seed=${appData.profileName}`;
+            }
+
+            popup.classList.remove('hidden');
+        }
+
+        function closeWelcome() {
+            const popup = document.getElementById('startup-welcome');
+            popup.style.opacity = '0';
+            popup.style.transition = 'opacity 0.5s ease';
+            setTimeout(() => {
+                popup.classList.add('hidden');
+                popup.style.opacity = '1';
+            }, 500);
+        }
+
+        // --- Persistence ---
+        const load = () => {
+            const saved = localStorage.getItem('learning_v2_data');
+            if (saved) { 
+                const parsed = JSON.parse(saved); 
+                appData = { ...appData, ...parsed }; 
+                if (!appData.streakHistory) appData.streakHistory = []; 
+                
+                // Migration: If old data has classes without dates, assume today or leave undefined (logic handles it)
+                if(appData.classes) {
+                    appData.classes = appData.classes.map(c => ({
+                        ...c,
+                        date: c.date || getFormattedDate(0) // Default legacy items to today
+                    }));
+                }
+            }
+        };
+        const persist = () => { updateStreakHistory(); localStorage.setItem('learning_v2_data', JSON.stringify(appData)); refreshUI(); };
+
+        // --- Data Management ---
+        function exportData() {
+            const dataStr = JSON.stringify(appData, null, 2);
+            const blob = new Blob([dataStr], { type: "application/json" });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement("a");
+            link.href = url;
+            link.download = `backup_${getFormattedDate(0)}.json`;
+            link.click();
+            notify("Full backup exported!");
+        }
+
+        function importData(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                try {
+                    const imported = JSON.parse(e.target.result);
+                    if (imported.profileName) {
+                        appData = { ...appData, ...imported };
+                        persist();
+                        notify("All data restored! Reloading...");
+                        setTimeout(() => location.reload(), 1000); 
+                    }
+                } catch (err) { notify("Invalid file!"); }
+            };
+            reader.readAsText(file);
+        }
+
+        // --- Branding/Profile ---
+        function triggerLogoUpload() { document.getElementById('logo-upload').click(); }
+        function triggerRadioUpload() { document.getElementById('radio-upload').click(); }
+        function handleLogoUpload(e) { const f = e.target.files[0]; if (f) { const r = new FileReader(); r.onload = (ev) => { appData.brandLogo = ev.target.result; persist(); }; r.readAsDataURL(f); } }
+        function handleRadioUpload(e) { const f = e.target.files[0]; if (f) { const r = new FileReader(); r.onload = (ev) => { appData.radioLogo = ev.target.result; persist(); }; r.readAsDataURL(f); } }
+        function handleProfileImgUpload(e) { const f = e.target.files[0]; if (f) { const r = new FileReader(); r.onload = (ev) => { appData.profileImg = ev.target.result; persist(); }; r.readAsDataURL(f); } }
+
+        document.getElementById('settings-profile-form').addEventListener('submit', (e) => {
+            e.preventDefault();
+            appData.profileName = document.getElementById('setting-name').value || appData.profileName;
+            appData.profileAge = document.getElementById('setting-age').value || appData.profileAge;
+            appData.liveRedirectUrl = document.getElementById('setting-live-url').value || "https://www.pw.live";
+            persist(); notify("Settings saved!");
+        });
+
+        // --- Navigation ---
+        function showView(v) {
+            document.querySelectorAll('.view-transition').forEach(el => { el.classList.add('hidden-view'); setTimeout(() => el.style.display = 'none', 300); });
+            setTimeout(() => { const t = document.getElementById(`view-${v}`); if (t) { t.style.display = 'block'; setTimeout(() => t.classList.remove('hidden-view'), 50); } }, 300);
+            
+            // Desktop Nav
+            document.querySelectorAll('nav button').forEach(b => b.classList.remove('active-nav'));
+            const nb = document.getElementById(`nav-${v}`); if (nb) nb.classList.add('active-nav');
+            
+            // Mobile Nav
+            document.querySelectorAll('.mobile-nav button').forEach(b => b.classList.remove('active-mobile-nav'));
+            const mnb = document.getElementById(`mob-nav-${v}`); if (mnb) mnb.classList.add('active-mobile-nav');
+
+            if (v === 'settings') {
+                document.getElementById('setting-name').value = appData.profileName;
+                document.getElementById('setting-age').value = appData.profileAge;
+                document.getElementById('setting-live-url').value = appData.liveRedirectUrl;
+            }
+        }
+
+        // --- Content Handlers ---
+        document.getElementById('add-class-form').addEventListener('submit', (e) => {
+            e.preventDefault();
+            appData.classes.push({ 
+                id: Date.now(), 
+                name: document.getElementById('class-name').value, 
+                topic: document.getElementById('class-topic').value, 
+                category: document.getElementById('class-category').value, 
+                time: document.getElementById('class-time').value, 
+                duration: document.getElementById('class-duration').value || 60, 
+                date: document.getElementById('class-date').value || getFormattedDate(0), // Save date
+                completed: false 
+            });
+            persist(); 
+            e.target.reset(); 
+            initDateInputs(); // Reset date to today after submit
+            notify("Class added!");
+        });
+        function toggleClass(id) { const c = appData.classes.find(x => x.id === id); if (c) { c.completed = !c.completed; persist(); } }
+        function deleteClass(id) { appData.classes = appData.classes.filter(x => x.id !== id); persist(); }
+        function launchLive() { window.open(appData.liveRedirectUrl || "https://www.pw.live", '_blank'); }
+
+        document.getElementById('add-classroom-form').addEventListener('submit', (e) => {
+            e.preventDefault();
+            appData.classrooms.push({ id: Date.now().toString(), name: document.getElementById('classroom-name').value, desc: document.getElementById('classroom-desc').value || "Class", attendance: {} });
+            persist(); e.target.reset(); notify("Classroom created!");
+        });
+        function deleteClassroom(id, e) { if(e) e.stopPropagation(); appData.classrooms = appData.classrooms.filter(room => room.id !== id); persist(); }
+        function openCalendar(id) {
+            activeClassroomId = id; const room = appData.classrooms.find(r => r.id === id);
+            document.getElementById('classroom-title').innerText = room.name;
+            document.getElementById('classroom-main-view').classList.add('hidden');
+            document.getElementById('classroom-calendar-view').classList.remove('hidden');
+            document.getElementById('btn-back-to-list').classList.remove('hidden');
+            document.getElementById('nav-prev-room').classList.remove('hidden');
+            document.getElementById('nav-next-room').classList.remove('hidden');
+            renderAttendanceCalendar();
+        }
+        function closeCalendar() {
+            activeClassroomId = null; document.getElementById('classroom-title').innerText = "My Classrooms";
+            document.getElementById('classroom-main-view').classList.remove('hidden');
+            document.getElementById('classroom-calendar-view').classList.add('hidden');
+            document.getElementById('btn-back-to-list').classList.add('hidden');
+            document.getElementById('nav-prev-room').classList.add('hidden');
+            document.getElementById('nav-next-room').classList.add('hidden');
+        }
+        function switchClassroom(dir) {
+            if (!activeClassroomId || appData.classrooms.length <= 1) return;
+            const idx = appData.classrooms.findIndex(r => r.id === activeClassroomId);
+            const nextIdx = (idx + dir + appData.classrooms.length) % appData.classrooms.length;
+            openCalendar(appData.classrooms[nextIdx].id);
+        }
+        function cycleAttendance(dateKey) {
+            const room = appData.classrooms.find(r => r.id === activeClassroomId);
+            const states = [null, 'present', 'absent', 'holiday'];
+            const cur = states.indexOf(room.attendance[dateKey] || null);
+            const nxt = states[(cur + 1) % 4];
+            if (nxt) room.attendance[dateKey] = nxt; else delete room.attendance[dateKey];
+            persist();
+        }
+        function changeCalendarMonth(off) { calendarDate.setMonth(calendarDate.getMonth() + off); renderAttendanceCalendar(); }
+        function switchHomeClassroom(dir) {
+            if (!appData.classrooms.length) return;
+            homeActiveClassroomIdx = (homeActiveClassroomIdx + dir + appData.classrooms.length) % appData.classrooms.length;
+            renderHomeClassroomPreview();
+        }
+
+        function setTaskFilter(f) {
+            appData.currentTaskFilter = f;
+            document.querySelectorAll('[id^="filter-"]').forEach(btn => btn.classList.remove('bg-white', 'shadow-sm', 'text-emerald-600'));
+            document.getElementById(`filter-${f}`).classList.add('bg-white', 'shadow-sm', 'text-emerald-600');
+            renderTasksView();
+        }
+        document.getElementById('add-task-form').addEventListener('submit', (e) => {
+            e.preventDefault();
+            appData.tasks.push({ 
+                id: Date.now(), 
+                title: document.getElementById('task-title').value, 
+                priority: document.getElementById('task-priority').value, 
+                date: document.getElementById('task-date').value, 
+                completed: false 
+            });
+            persist(); 
+            e.target.reset(); 
+            initDateInputs(); // Reset to today
+            notify("Task saved!");
+        });
+        function toggleTask(id) { const t = appData.tasks.find(x => x.id === id); if(t) { t.completed = !t.completed; persist(); } }
+        function deleteTask(id) { appData.tasks = appData.tasks.filter(x => x.id !== id); persist(); }
+
+        document.getElementById('study-hours-form').addEventListener('submit', (e) => {
+            e.preventDefault();
+            appData.studyHours[document.getElementById('study-day').value] = parseFloat(document.getElementById('study-amount').value);
+            persist(); e.target.reset(); notify("Study logged!");
+        });
+
+        // --- Modals ---
+        function showUpcomingModal() {
+            const cont = document.getElementById('upcoming-list-container');
+            const allLive = appData.classes.filter(c => c.category === 'live');
+            cont.innerHTML = allLive.length ? allLive.map(c => `
+                <div class="flex items-center justify-between p-5 bg-gray-50 rounded-2xl hover:bg-emerald-50 transition-all">
+                    <div class="flex items-center gap-4">
+                        <div class="w-10 h-10 rounded-xl bg-white flex items-center justify-center text-emerald-600 shadow-sm"><i class="fa-solid fa-play text-sm"></i></div>
+                        <div><h4 class="font-bold text-sm">${c.name}</h4><p class="text-[10px] text-gray-400 uppercase font-bold">${c.topic}</p></div>
+                    </div>
+                    <div class="text-right">
+                        <p class="font-bold text-xs text-emerald-600">${format12h(c.time)}</p>
+                        <p class="text-[9px] text-gray-400 font-bold">${c.date || 'Today'}</p>
+                    </div>
+                </div>
+            `).join('') : '<p class="text-center py-10 text-gray-400">No classes scheduled.</p>';
+            document.getElementById('upcoming-modal').classList.remove('hidden');
+        }
+        function hideUpcomingModal() { document.getElementById('upcoming-modal').classList.add('hidden'); }
+
+        // --- Rendering Engine ---
+        function refreshUI() {
+            document.getElementById('greeting-name-display').innerText = appData.profileName.split(' ')[0];
+            document.getElementById('profile-name-display').innerText = appData.profileName;
+            document.getElementById('profile-sub-display').innerText = `Batch 2026 • ${appData.profileAge} years`;
+            if (appData.profileImg) { document.getElementById('profile-img-display').src = appData.profileImg; document.getElementById('settings-profile-preview').src = appData.profileImg; }
+            const logo = appData.brandLogo ? `<img src="${appData.brandLogo}" class="w-full h-full object-cover">` : "PW";
+            const settingsLogo = document.getElementById('settings-brand-preview'); if (settingsLogo) settingsLogo.innerHTML = logo;
+            const liveHeaderLogo = document.getElementById('live-header-logo'); if (liveHeaderLogo) liveHeaderLogo.innerHTML = logo;
+            const settingsRadio = document.getElementById('settings-radio-preview');
+            if (settingsRadio) settingsRadio.innerHTML = appData.radioLogo ? `<img src="${appData.radioLogo}" class="w-full h-full object-cover">` : `<i class="fa-solid fa-tower-broadcast"></i>`;
+
+            renderHomeStats();
+            renderClassesView();
+            renderHomeTaskSummary();
+            renderLiveClassSummary();
+            renderStudyCharts();
+            renderMiniCalendar();
+            renderClassrooms();
+            renderHomeClassroomPreview();
+            if (activeClassroomId) renderAttendanceCalendar();
+        }
+
+        function renderHomeStats() {
+            const pend = appData.classes.filter(c => !c.completed).length, hours = Object.values(appData.studyHours).reduce((a, b) => a + b, 0);
+            document.getElementById('stat-pending-classes').innerText = pend;
+            document.getElementById('stat-completed-classes').innerText = appData.classes.filter(c => c.completed).length;
+            document.getElementById('stat-total-study').innerText = hours.toFixed(1);
+            document.getElementById('stat-streak').innerHTML = `${calculateCurrentStreak()} <span class="text-lg font-normal text-gray-400">days</span>`;
+        }
+
+        function renderClassesView() {
+            const cont = document.getElementById('classes-list-container'); if (!cont) return;
+            // Sort: Non-completed first, then by date, then by time
+            const sorted = [...appData.classes].sort((a, b) => {
+                if (a.completed === b.completed) {
+                    if (a.date === b.date) return a.time.localeCompare(b.time);
+                    return new Date(a.date) - new Date(b.date);
+                }
+                return a.completed - b.completed;
+            });
+            cont.innerHTML = sorted.length ? sorted.map(c => `
+                <div class="dashboard-card p-5 flex items-center justify-between group ${c.completed ? 'opacity-70' : ''}">
+                    <div class="flex items-center gap-4">
+                        <div class="relative">
+                            <div class="w-12 h-12 rounded-xl flex items-center justify-center bg-emerald-50 text-emerald-600"><i class="fa-solid ${c.completed ? 'fa-check' : 'fa-graduation-cap'} text-xl"></i></div>
+                            ${c.category === 'live' ? `<div class="absolute -bottom-1 -right-1">${appData.brandLogo ? `<div class="brand-logo-container w-5 h-5 text-[8px]"><img src="${appData.brandLogo}"></div>` : `<div class="brand-logo-container w-5 h-5 text-[8px]">PW</div>`}</div>` : ''}
+                        </div>
+                        <div>
+                            <div class="flex items-center gap-2">
+                                <h4 class="font-bold text-sm">${c.name}</h4>
+                                <span class="text-[8px] px-2 py-0.5 rounded-full font-bold uppercase ${c.category === 'live' ? 'bg-red-100 text-red-600' : 'bg-gray-100 text-gray-600'}">${c.category}</span>
+                            </div>
+                            <p class="text-[10px] text-gray-400">${c.date || 'Today'} • ${format12h(c.time)} • ${c.duration} mins • ${c.topic}</p>
+                        </div>
+                    </div>
+                    <div class="flex gap-2"><button onclick="toggleClass(${c.id})" class="p-2 text-emerald-600"><i class="fa-solid fa-circle-check"></i></button><button onclick="deleteClass(${c.id})" class="p-2 text-red-400 opacity-0 group-hover:opacity-100 transition-opacity"><i class="fa-solid fa-trash-can"></i></button></div>
+                </div>
+            `).join('') : '<div class="p-10 text-center text-gray-400">No classes.</div>';
+        }
+
+        function renderLiveClassSummary() {
+            const cont = document.getElementById('live-class-content');
+            const badge = document.getElementById('live-badge');
+            
+            // Fix: Filter live classes that are ONLY for TODAY and not completed
+            const todayStr = getFormattedDate(0);
+            const next = appData.classes
+                .filter(c => c.category === 'live' && !c.completed && (c.date === todayStr))
+                .sort((a,b) => a.time.localeCompare(b.time))[0];
+            
+            if (countdownInterval) clearInterval(countdownInterval);
+            if (!next) { 
+                if (badge) { badge.innerText = "None"; badge.className = "text-[10px] bg-gray-400 px-3 py-1 rounded-full text-white font-bold uppercase shadow-sm"; }
+                cont.innerHTML = `<div class="text-center py-10 text-gray-400 flex flex-col items-center"><i class="fa-solid fa-video-slash text-4xl mb-4 opacity-50"></i><p class="text-sm font-medium mb-4">No live sessions today.</p><button onclick="showUpcomingModal()" class="text-xs font-bold text-emerald-600 bg-emerald-50 px-4 py-2 rounded-xl border border-emerald-100 hover:bg-emerald-100 transition-colors">View All Classes</button></div>`; 
+                return; 
+            }
+            const liveIcon = appData.radioLogo ? `<img src="${appData.radioLogo}" class="w-full h-full object-cover rounded-full" alt="Live">` : `<i class="fa-solid fa-tower-broadcast text-4xl"></i>`;
+            cont.innerHTML = `
+                <div class="bg-white/40 backdrop-blur-sm rounded-[36px] p-6 border border-white flex flex-col items-center text-center group">
+                    <div class="w-20 h-20 bg-white rounded-full flex items-center justify-center text-emerald-600 shadow-xl mb-4 overflow-hidden relative"><div class="absolute inset-0 animate-pulse bg-emerald-400/10"></div><div class="relative z-10">${liveIcon}</div></div>
+                    <div class="mb-4">
+                        <p class="text-[10px] text-emerald-600 font-bold uppercase tracking-[0.2em] mb-1">Your class starts at:</p>
+                        <h4 class="font-extrabold text-3xl text-gray-800 tracking-tight mb-1">${format12h(next.time)}</h4>
+                        <p class="text-xs text-gray-500 font-medium">${next.name} • ${next.topic}</p>
+                    </div>
+                    <div id="countdown-display" class="mb-6 font-mono font-bold text-[13px] text-emerald-700 bg-white px-4 py-2 rounded-2xl border border-emerald-100 shadow-sm w-full">Calculating...</div>
+                    <div class="flex gap-2 w-full">
+                        <button onclick="launchLive()" class="flex-1 bg-emerald-600 text-white py-4 rounded-[20px] font-bold hover:bg-emerald-700 shadow-lg shadow-emerald-200 active:scale-95 transition-all">Enter Live Room</button>
+                        <button onclick="showUpcomingModal()" class="w-14 h-14 bg-white text-gray-400 rounded-[20px] border border-gray-100 hover:text-emerald-600 hover:border-emerald-200 transition-all flex items-center justify-center shadow-sm"><i class="fa-solid fa-list-ul"></i></button>
+                    </div>
+                </div>
+            `;
+            const updateTimer = () => {
+                const now = new Date();
+                const [hrs, mins] = next.time.split(':');
+                
+                // Construct Date object based on the class date (should be today per filter)
+                const start = new Date(next.date + 'T' + next.time);
+                
+                // Fallback if date parsing fails (safeguard)
+                if(isNaN(start.getTime())) {
+                   start.setTime(new Date().setHours(hrs, mins, 0, 0));
+                }
+                
+                const diff = start - now;
+                const disp = document.getElementById('countdown-display');
+                if (!disp) return;
+                if (diff > 0) {
+                    badge.innerText = "Upcoming"; badge.className = "text-[10px] bg-orange-400 px-3 py-1 rounded-full text-white font-bold uppercase shadow-sm";
+                    const h = Math.floor(diff / 3600000).toString().padStart(2, '0'), m = Math.floor((diff % 3600000) / 60000).toString().padStart(2, '0'), s = Math.floor((diff % 60000) / 1000).toString().padStart(2, '0');
+                    disp.innerText = `STARTS IN: ${h}:${m}:${s}`;
+                } else {
+                    badge.innerText = "Live Now"; badge.className = "text-[10px] bg-red-500 px-3 py-1 rounded-full text-white font-bold uppercase shadow-sm animate-pulse";
+                    const elapsed = Math.abs(diff), h = Math.floor(elapsed / 3600000).toString().padStart(2, '0'), m = Math.floor((elapsed % 3600000) / 60000).toString().padStart(2, '0'), s = Math.floor((elapsed % 60000) / 1000).toString().padStart(2, '0');
+                    disp.innerHTML = `<span class="text-red-600 animate-pulse">LIVE FOR: ${h}:${m}:${s}</span>`;
+                }
+            };
+            updateTimer(); countdownInterval = setInterval(updateTimer, 1000);
+        }
+
+        function renderHomeClassroomPreview() {
+            const cont = document.getElementById('home-classroom-preview'); if (!cont) return;
+            if (!appData.classrooms.length) { cont.innerHTML = `<div class="p-10 text-center text-gray-400 text-sm">Create a classroom to see tracker.</div>`; return; }
+            const room = appData.classrooms[homeActiveClassroomIdx] || appData.classrooms[0];
+            const now = new Date(), y = now.getFullYear(), m = now.getMonth(), first = new Date(y, m, 1).getDay(), days = new Date(y, m + 1, 0).getDate();
+            let grid = ''; for(let i=0; i<first; i++) grid += '<div class="w-full h-8"></div>';
+            for(let d=1; d<=days; d++) {
+                const key = `${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`, s = room.attendance[key];
+                let content = d, bg = 'bg-gray-50 text-gray-400';
+                if (s === 'present') { content = '<i class="fa-solid fa-check text-xs text-white"></i>'; bg = 'bg-emerald-500'; }
+                else if (s === 'absent') { content = '<i class="fa-solid fa-xmark text-xs text-white"></i>'; bg = 'bg-red-500'; }
+                else if (s === 'holiday') { content = '<i class="fa-solid fa-umbrella text-xs text-white"></i>'; bg = 'bg-gray-400'; }
+                grid += `<div class="w-full h-10 rounded-lg flex items-center justify-center ${bg} font-bold text-[10px]">${content}</div>`;
+            }
+            cont.innerHTML = `<div class="mb-4 flex justify-between items-center"><p class="font-bold text-lg text-emerald-800 truncate">${room.name}</p><span class="text-[10px] text-gray-400 font-bold uppercase">${now.toLocaleString('default', { month: 'short' })} ${y}</span></div><div class="grid grid-cols-7 gap-2">${grid}</div><div class="mt-4 flex gap-4"><div class="flex items-center gap-1 text-[9px] font-bold uppercase"><span class="w-2 h-2 rounded-full dot-present"></span> Pres</div><div class="flex items-center gap-1 text-[9px] font-bold uppercase"><span class="w-2 h-2 rounded-full dot-absent"></span> Abs</div><div class="flex items-center gap-1 text-[9px] font-bold uppercase"><span class="w-2 h-2 rounded-full dot-holiday"></span> Hol</div></div>`;
+        }
+
+        function renderClassrooms() {
+            const cont = document.getElementById('classroom-grid'); if (!cont) return;
+            cont.innerHTML = appData.classrooms.length ? appData.classrooms.map(room => `<div onclick="openCalendar('${room.id}')" class="dashboard-card p-6 cursor-pointer group flex flex-col justify-between h-full"><div class="flex justify-between items-start mb-4"><div class="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center"><i class="fa-solid fa-graduation-cap text-xl"></i></div><button onclick="deleteClassroom('${room.id}', event)" class="text-gray-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"><i class="fa-solid fa-trash-can"></i></button></div><div><h4 class="font-bold text-lg mb-1">${room.name}</h4><p class="text-xs text-gray-400 mb-4">${room.desc}</p></div><div class="pt-4 border-t border-gray-50 flex justify-between items-center"><span class="text-[10px] font-bold text-emerald-600 uppercase">View Attendance</span><i class="fa-solid fa-arrow-right text-gray-300"></i></div></div>`).join('') : '<div class="col-span-12 p-10 text-center text-gray-400">Add a classroom.</div>';
+        }
+
+        function renderAttendanceCalendar() {
+            const cont = document.getElementById('attendance-calendar-grid'), room = appData.classrooms.find(r => r.id === activeClassroomId); if(!room) return;
+            const y = calendarDate.getFullYear(), m = calendarDate.getMonth(), first = new Date(y, m, 1).getDay(), days = new Date(y, m + 1, 0).getDate();
+            document.getElementById('calendar-header-title').innerText = `${calendarDate.toLocaleString('default', { month: 'long' })} ${y}`;
+            let html = ''; for(let i=0; i<first; i++) html += '<div></div>';
+            for(let d=1; d<=days; d++) {
+                const key = `${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`, s = room.attendance[key];
+                let bg = 'bg-white hover:bg-gray-50', icon = '';
+                if(s === 'present') { bg = 'bg-emerald-500 text-white'; icon = '<i class="fa-solid fa-check text-2xl mt-2 animate-bounce"></i>'; }
+                else if(s === 'absent') { bg = 'bg-red-500 text-white'; icon = '<i class="fa-solid fa-xmark text-2xl mt-2 animate-pulse"></i>'; }
+                else if(s === 'holiday') { bg = 'bg-gray-400 text-white'; icon = '<i class="fa-solid fa-umbrella text-2xl mt-2"></i>'; }
+                html += `<div onclick="cycleAttendance('${key}')" class="h-24 sm:h-36 border rounded-3xl ${bg} flex flex-col items-center justify-center cursor-pointer shadow-sm transition-all"><span class="text-xs font-bold">${d}</span>${icon}</div>`;
+            }
+            cont.innerHTML = html;
+        }
+
+        function renderTasksView() {
+            const cont = document.getElementById('tasks-list-container'); if (!cont) return;
+            const d = getFormattedDate(appData.currentTaskFilter === 'yesterday' ? -1 : (appData.currentTaskFilter === 'tomorrow' ? 1 : 0));
+            const filt = appData.tasks.filter(t => t.date === d);
+            cont.innerHTML = filt.length ? filt.map(t => `<div class="flex items-center justify-between p-4 rounded-2xl border bg-white group"><div class="flex items-center gap-4"><input type="checkbox" ${t.completed ? 'checked' : ''} onclick="toggleTask(${t.id})" class="accent-emerald-600 w-5 h-5 cursor-pointer"><div><p class="text-sm font-bold">${t.title}</p><span class="text-[9px] px-2 py-0.5 rounded-full font-bold uppercase priority-${t.priority}">${t.priority}</span></div></div><button onclick="deleteTask(${t.id})" class="text-gray-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"><i class="fa-solid fa-trash-can"></i></button></div>`).join('') : '<div class="py-10 text-center text-gray-400">No tasks for this day.</div>';
+        }
+
+        function renderHomeTaskSummary() {
+            const cont = document.getElementById('home-todo-list'); if (!cont) return;
+            const today = appData.tasks.filter(t => t.date === getFormattedDate(0));
+            cont.innerHTML = today.length ? today.map(t => `<div onclick="toggleTask(${t.id})" class="flex items-center gap-3 p-4 bg-gray-50 rounded-2xl cursor-pointer hover:bg-emerald-50"><div class="w-5 h-5 rounded-lg border-2 ${t.completed ? 'bg-emerald-500 border-emerald-500' : 'border-gray-300'} flex items-center justify-center">${t.completed ? '<i class="fa-solid fa-check text-[10px] text-white"></i>' : ''}</div><p class="text-[12px] font-semibold ${t.completed ? 'line-through text-gray-400' : ''}">${t.title}</p></div>`).join('') : '<p class="text-xs text-center text-gray-400 py-10">All caught up for today!</p>';
+        }
+
+        function renderStudyCharts() {
+            const pg = document.getElementById('study-page-chart');
+            const hm = document.getElementById('home-chart-container');
+            
+            // Data setup
+            const keys = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
+            const fullDayNames = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+            const v = keys.map(k => appData.studyHours[k] || 0);
+            const m = Math.max(...v, 8); // Max value for scaling, min 8 hours for scale
+            
+            // Get current day index (0=Sun, 6=Sat). We want 0=Mon, 6=Sun.
+            const todayIndex = (new Date().getDay() + 6) % 7;
+
+            const generateBars = () => keys.map((k, i) => {
+                const val = appData.studyHours[k] || 0;
+                const h = (val / m) * 100;
+                const isToday = i === todayIndex;
+                
+                // Beautiful Visuals
+                const barColor = isToday ? 'from-emerald-500 to-emerald-400' : 'from-emerald-300 to-emerald-200';
+                const barOpacity = isToday ? 'opacity-100' : 'opacity-60 hover:opacity-90';
+                const heightStyle = `height:${Math.max(h, 4)}%`;
+                
+                return `
+                    <div class="flex flex-col items-center gap-3 w-full group relative h-full justify-end">
+                        <!-- Floating Tooltip -->
+                        <div class="absolute -top-10 left-1/2 -translate-x-1/2 bg-gray-800 text-white text-[10px] font-bold py-1 px-3 rounded-lg shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-20">
+                            ${val} hrs
+                            <div class="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-gray-800 rotate-45"></div>
+                        </div>
+                        
+                        <!-- Bar Track -->
+                        <div class="h-full w-full flex items-end justify-center rounded-t-2xl relative">
+                            <!-- Animated Bar -->
+                            <div class="w-3 sm:w-8 md:w-10 rounded-t-xl bg-gradient-to-t ${barColor} ${barOpacity} transition-all duration-500 ease-out relative shadow-sm group-hover:shadow-md" 
+                                 style="${heightStyle}">
+                                 ${isToday ? '<div class="absolute bottom-0 w-full h-1.5 bg-emerald-400/30 blur-sm"></div>' : ''}
+                            </div>
+                        </div>
+                        
+                        <!-- Axis Label -->
+                        <div class="text-center">
+                            <span class="text-[10px] font-bold uppercase tracking-wider ${isToday ? 'text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-md' : 'text-gray-400'}">${k.substring(0,3)}</span>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            const barsHTML = generateBars();
+
+            if(pg) pg.innerHTML = barsHTML;
+            if(hm) hm.innerHTML = barsHTML;
+            
+            // Update total text
+            if(document.getElementById('study-total-display')) {
+                document.getElementById('study-total-display').innerText = v.reduce((a,b)=>a+b,0).toFixed(1);
+            }
+        }
+
+        function renderMiniCalendar() {
+            const cont = document.getElementById('mini-calendar-days'); if (!cont) return;
+            const n = new Date(), y = n.getFullYear(), m = n.getMonth(), d = n.getDate(), first = new Date(y, m, 1).getDay(), days = new Date(y, m + 1, 0).getDate();
+            if(document.getElementById('cal-month-year')) document.getElementById('cal-month-year').innerText = `${n.toLocaleString('default',{month:'long'})} ${y}`;
+            let h = ''; for(let i=0; i<first; i++) h += '<span></span>';
+            for(let i=1; i<=days; i++) h += `<span class="w-6 h-6 flex items-center justify-center rounded-full text-[10px] ${i===d?'bg-emerald-600 text-white font-bold':'text-gray-600'}">${i}</span>`;
+            cont.innerHTML = h;
+        }
+
+        function notify(text) { const el = document.getElementById('notification'); document.getElementById('notification-text').innerText = text; el.classList.remove('translate-y-28', 'opacity-0'); setTimeout(() => el.classList.add('translate-y-28', 'opacity-0'), 3000); }
+
+        window.onload = () => { 
+            load(); 
+            initDateInputs();
+            refreshUI(); 
+            showView('home');
+            showWelcomePopup();
+        };
+    </script>
+</body>
+</html>

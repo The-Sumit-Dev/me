@@ -62,38 +62,6 @@ body {
     animation: fadeIn 0.4s ease-out forwards;
 }
 
-.modal-overlay {
-    background: rgba(15, 23, 42, 0.4);
-    backdrop-filter: blur(8px);
-    display: none;
-    position: fixed;
-    inset: 0;
-    z-index: 100;
-    align-items: center;
-    justify-content: center;
-    padding: 1rem;
-}
-.modal-overlay.show {
-    display: flex;
-}
-
-.punishment-item {
-    transition: all 0.2s ease;
-    border-left: 4px solid transparent;
-}
-.punishment-item:not(.done) {
-    border-left-color: #ef4444;
-}
-.punishment-item.done {
-    opacity: 0.6;
-    background: #f1f5f9 !important;
-    border-left-color: #10b981;
-}
-.punishment-item.done p {
-    text-decoration: line-through;
-    color: #94a3b8;
-}
-
 /* Chart sizing fix */
 .chart-container {
     position: relative;

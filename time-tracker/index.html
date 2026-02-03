@@ -168,62 +168,6 @@
             </div>
         </div>
 
-        <section class="animate-fade-in" style="animation-delay: 0.5s">
-            <div class="glass-card rounded-[40px] overflow-hidden">
-                <div class="p-8 md:p-10 bg-white border-b border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-6">
-                    <div class="flex items-center gap-6">
-                        <div class="w-16 h-16 bg-red-50 text-red-500 rounded-3xl flex items-center justify-center text-2xl shadow-inner">
-                            <i class="fas fa-biohazard"></i>
-                        </div>
-                        <div>
-                            <h3 class="text-2xl font-black text-slate-900 tracking-tight">Disciplinary Log</h3>
-                            <p class="text-sm text-slate-400 font-semibold">Active consequences for missed goals</p>
-                        </div>
-                    </div>
-                    <div id="punishmentBadge" class="hidden px-5 py-2.5 rounded-full font-black text-xs tracking-widest shadow-lg">0 ACTIVE</div>
-                </div>
-                
-                <div id="punishmentListContainer" class="p-8 md:p-10 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 min-h-[200px] bg-slate-50/30">
-                    <div id="emptyPunishmentMsg" class="col-span-full flex flex-col items-center justify-center text-slate-300 py-12">
-                        <i class="fas fa-check-circle text-5xl mb-4 opacity-10"></i>
-                        <p class="font-bold uppercase tracking-widest text-xs">No active penalties</p>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-        <div id="punishmentAlertModal" class="modal-overlay">
-            <div class="bg-white rounded-[40px] p-10 max-w-sm w-full text-center shadow-2xl border border-slate-100">
-                <div class="w-24 h-24 bg-red-100 text-red-600 rounded-full flex items-center justify-center mx-auto mb-8 text-4xl shadow-xl shadow-red-50">
-                    <i class="fas fa-skull-crossbones"></i>
-                </div>
-                <h2 class="text-3xl font-black text-slate-900 mb-3">Target Missed</h2>
-                <p class="text-slate-500 font-medium mb-10 leading-relaxed">You studied less than the 6-hour minimum. Time for discipline.</p>
-                <button onclick="showPunishmentDetails()" class="w-full bg-red-600 hover:bg-red-700 text-white font-black py-5 rounded-2xl transition-all shadow-xl shadow-red-200 active:scale-95">
-                    REVEAL PENALTY
-                </button>
-            </div>
-        </div>
-
-        <div id="punishmentDetailModal" class="modal-overlay">
-            <div class="bg-white rounded-[40px] p-10 max-w-sm w-full text-center shadow-2xl relative border border-slate-100">
-                <span class="text-[10px] font-black text-slate-300 mb-8 block uppercase tracking-[0.3em]">Consequence Assigned</span>
-                
-                <div id="punishmentBox" class="bg-slate-50 border-4 border-dashed border-red-100 rounded-[32px] p-10 mb-8 flex items-center justify-center">
-                    <p id="punishmentText" class="text-2xl font-black text-red-600 leading-tight">No YouTube</p>
-                </div>
-
-                <div class="space-y-4">
-                    <button id="shuffleBtn" onclick="shufflePunishment()" class="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 font-black py-4 rounded-xl transition-all flex items-center justify-center gap-3 active:scale-95">
-                        <i class="fas fa-random text-xs"></i> SHUFFLE (<span id="shuffleCount">3</span>)
-                    </button>
-                    <button onclick="acceptPunishment()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-black py-4 rounded-xl transition-all shadow-xl shadow-indigo-100 active:scale-95">
-                        I ACCEPT
-                    </button>
-                </div>
-            </div>
-        </div>
-
         <div id="toast" class="fixed bottom-10 left-1/2 -translate-x-1/2 bg-slate-900 text-white px-8 py-5 rounded-[24px] shadow-2xl transform translate-y-32 opacity-0 transition-all duration-500 flex items-center gap-4 z-50 min-w-[300px]">
             <div class="w-6 h-6 bg-emerald-500 rounded-full flex items-center justify-center text-[10px] text-white">
                 <i class="fas fa-check"></i>

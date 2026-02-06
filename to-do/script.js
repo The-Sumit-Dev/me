@@ -1,3 +1,5 @@
+// --- script.js ---
+
 // --- State ---
 let tasks = JSON.parse(localStorage.getItem('modern-todo-tasks')) || [];
 let userName = localStorage.getItem('modern-todo-username') || 'User';
@@ -245,7 +247,87 @@ window.generatePDF = (type) => {
         </div>
     `;
 
-    if (type === 'list') {
+    if (type === 'date') {
+        reportTitle = 'Single Day Breakdown';
+        const dateLabel = formatDate(currentDate);
+        const dayTasks = tasks.filter(t => isSameDay(new Date(t.date), currentDate));
+        
+        const total = dayTasks.length;
+        const completed = dayTasks.filter(t => t.completed).length;
+        const percent = total === 0 ? 0 : Math.round((completed / total) * 100);
+
+        let tasksHtml = '';
+        if (dayTasks.length === 0) {
+            tasksHtml = '<div style="padding: 40px; text-align: center; color: #6b7280; background: #f9fafb; border-radius: 12px;">No tasks recorded for this day.</div>';
+        } else {
+            dayTasks.forEach(task => {
+                const pColors = {
+                    high: { bg: '#fef2f2', text: '#ef4444', border: '#fecaca' },
+                    medium: { bg: '#fffbeb', text: '#f59e0b', border: '#fde68a' },
+                    low: { bg: '#eff6ff', text: '#3b82f6', border: '#bfdbfe' }
+                };
+                const colors = pColors[task.priority || 'low'];
+                const statusColor = task.completed ? '#10b981' : '#6b7280';
+                
+                tasksHtml += `
+                    <div style="display: flex; align-items: flex-start; background: #ffffff; border: 1px solid #e5e7eb; border-radius: 12px; padding: 16px; margin-bottom: 12px; box-shadow: 0 1px 2px rgba(0,0,0,0.05);">
+                        <div style="width: 20px; height: 20px; border: 2px solid ${task.completed ? '#10b981' : '#d1d5db'}; background: ${task.completed ? '#10b981' : 'transparent'}; border-radius: 50%; margin-right: 15px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 2px;">
+                            ${task.completed ? '<span style="color:white; font-size:12px;">✓</span>' : ''}
+                        </div>
+                        <div style="flex: 1;">
+                            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 4px;">
+                                <h4 style="margin: 0; font-size: 15px; font-weight: 600; color: ${task.completed ? '#9ca3af' : '#1f2937'}; ${task.completed ? 'text-decoration: line-through;' : ''}">
+                                    ${escapeHtml(task.text)}
+                                </h4>
+                                <span style="font-size: 9px; font-weight: 800; background: ${colors.bg}; color: ${colors.text}; border: 1px solid ${colors.border}; padding: 2px 6px; border-radius: 4px; text-transform: uppercase;">
+                                    ${task.priority || 'low'}
+                                </span>
+                            </div>
+                            <div style="display: flex; gap: 15px; font-size: 11px; color: #6b7280;">
+                                ${task.dueTime ? `<span>⏰ ${formatTimeDisplay(task.dueTime)}</span>` : ''}
+                                <span>Status: <b style="color: ${statusColor}">${task.completed ? 'Completed' : 'Pending'}</b></span>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        contentHtml = `
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 25px;">
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <div style="width: 4px; height: 24px; background: #7c3aed; border-radius: 2px;"></div>
+                    <h2 style="font-size: 20px; font-weight: 700; color: #111827; margin: 0;">${dateLabel}</h2>
+                </div>
+                <div style="background: #f3f4f6; color: #4b5563; padding: 5px 12px; border-radius: 20px; font-size: 11px; font-weight: 700; border: 1px solid #e5e7eb;">
+                    Daily Summary
+                </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px; margin-bottom: 30px;">
+                <div style="background: #ffffff; border: 1px solid #e5e7eb; padding: 15px; border-radius: 12px; text-align: center;">
+                    <p style="font-size: 10px; color: #9ca3af; margin: 0 0 5px 0; font-weight: 700; text-transform: uppercase;">Total</p>
+                    <p style="font-size: 22px; font-weight: 800; color: #1f2937; margin: 0;">${total}</p>
+                </div>
+                <div style="background: #ffffff; border: 1px solid #e5e7eb; padding: 15px; border-radius: 12px; text-align: center;">
+                    <p style="font-size: 10px; color: #9ca3af; margin: 0 0 5px 0; font-weight: 700; text-transform: uppercase;">Done</p>
+                    <p style="font-size: 22px; font-weight: 800; color: #10b981; margin: 0;">${completed}</p>
+                </div>
+                <div style="background: #ffffff; border: 1px solid #e5e7eb; padding: 15px; border-radius: 12px; text-align: center;">
+                    <p style="font-size: 10px; color: #9ca3af; margin: 0 0 5px 0; font-weight: 700; text-transform: uppercase;">Progress</p>
+                    <p style="font-size: 22px; font-weight: 800; color: #7c3aed; margin: 0;">${percent}%</p>
+                </div>
+            </div>
+
+            <div style="background: #fafafa; border-radius: 16px; padding: 20px; border: 1px solid #f1f5f9;">
+                <h3 style="font-size: 14px; font-weight: 700; color: #4b5563; margin: 0 0 15px 0; display: flex; align-items: center; gap: 8px;">
+                    Goals List
+                </h3>
+                ${tasksHtml}
+            </div>
+        `;
+    }
+    else if (type === 'list') {
         reportTitle = 'Daily Breakdown Report';
         let rowsHtml = '';
         const days = getAggregatedDays();
@@ -487,7 +569,6 @@ const renderChart = () => {
     }
     DOM.statMomentum.innerHTML = `<span class="${trendColor} text-lg">${trendIcon}</span>`;
 
-    // Updated Gradient for Light Theme
     const gradient = ctx.createLinearGradient(0, 0, 0, 300);
     gradient.addColorStop(0, 'rgba(124, 58, 237, 0.4)'); 
     gradient.addColorStop(1, 'rgba(124, 58, 237, 0.0)'); 
@@ -500,7 +581,7 @@ const renderChart = () => {
                 label: 'Completion',
                 data: dataPoints,
                 borderWidth: 3,
-                borderColor: '#7c3aed', // Primary Violet
+                borderColor: '#7c3aed', 
                 backgroundColor: gradient,
                 fill: true,
                 tension: 0.4,
@@ -521,7 +602,7 @@ const renderChart = () => {
             plugins: {
                 legend: { display: false },
                 tooltip: {
-                    backgroundColor: 'rgba(30, 41, 59, 0.9)', // Dark Tooltip
+                    backgroundColor: 'rgba(30, 41, 59, 0.9)', 
                     titleColor: '#fff',
                     titleFont: { family: "'Outfit', sans-serif", size: 13 },
                     bodyColor: '#e2e8f0',
@@ -545,13 +626,13 @@ const renderChart = () => {
                 y: {
                     beginAtZero: true,
                     max: 105, 
-                    grid: { color: '#e2e8f0' }, // Visible grid in light mode
+                    grid: { color: '#e2e8f0' }, 
                     ticks: { display: false } 
                 },
                 x: {
                     grid: { display: false },
                     ticks: { 
-                        color: '#64748b', // Slate-500
+                        color: '#64748b', 
                         font: { size: 11, family: "'JetBrains Mono', monospace" } 
                     }
                 }
@@ -826,7 +907,6 @@ const showQuote = () => {
     document.getElementById('quoteContent').classList.remove('scale-95');
     document.getElementById('quoteContent').classList.add('scale-100');
     lucide.createIcons();
-    setTimeout(() => {}, 4000);
 };
 
 window.closeQuote = () => {
@@ -849,7 +929,6 @@ DOM.priorityBtn.addEventListener('click', () => {
     updatePriorityBtnUI();
 });
 
-// Updated Confetti Colors for Light Theme (No white)
 const triggerConfetti = () => {
     const colors = ['#7c3aed', '#3b82f6', '#ec4899', '#f59e0b', '#10b981'];
     for (let i = 0; i < 100; i++) {
@@ -942,7 +1021,6 @@ const updateUI = () => {
 const renderTask = (task) => {
     const pConfig = PRIORITY_CONFIG[task.priority || 'low'];
     const div = document.createElement('div');
-    // Light Theme Task Card Styles
     div.className = `group glass-panel p-4 rounded-2xl border-l-4 transition-all duration-300 animate-slide-up bg-white ${task.completed ? 'border-l-green-400 bg-green-50/50 opacity-70' : pConfig.color.replace('text-', 'border-l-').replace('bg-', 'border-')}`;
     
     const mainRow = document.createElement('div');
@@ -1149,7 +1227,6 @@ const addTask = (e) => {
     saveTasks(); updateUI(); addToast('Goal added successfully', 'success');
 };
 
-// --- Background Loop (1s) ---
 setInterval(() => {
     const now = new Date();
     const nowMs = Date.now();
@@ -1185,7 +1262,6 @@ const addToast = (msg, type = 'info') => {
     const color = type === 'success' ? 'text-green-600' : 'text-blue-600';
     const bg = type === 'success' ? 'bg-green-50 border-green-200' : 'bg-blue-50 border-blue-200';
     const icon = type === 'success' ? 'check-circle' : 'info';
-    // Light Theme Toast
     el.className = `glass-panel border ${bg} backdrop-blur-md px-4 py-3 rounded-xl shadow-lg flex items-center gap-3 animate-slide-up pointer-events-auto`;
     el.innerHTML = `<i data-lucide="${icon}" class="w-4 h-4 ${color}"></i><span class="text-sm font-medium text-slate-800">${msg}</span>`;
     DOM.toastContainer.appendChild(el);

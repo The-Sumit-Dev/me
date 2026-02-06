@@ -235,76 +235,114 @@ async function exportDataToPDF() {
     const doc = new jsPDF('p', 'pt', 'a4');
     const userName = userNameDisplay.textContent;
     const range = dateRangeLabel.textContent;
-    const total = totalHoursEl.textContent + " HRS";
-    const avg = avgHoursEl.textContent + " HRS";
+    
+    // Helper function to convert decimal hours to "Xh Ym"
+    const formatTime = (decimalHours) => {
+        const h = Math.floor(decimalHours);
+        const m = Math.round((decimalHours - h) * 60);
+        return `${h}h ${m}m`;
+    };
+
+    const totalStr = formatTime(parseFloat(totalHoursEl.textContent));
+    const avgStr = formatTime(parseFloat(avgHoursEl.textContent));
     const goals = daysMetEl.textContent + " DAYS";
 
-    doc.setFillColor(15, 23, 42); 
-    doc.rect(0, 0, 595, 140, 'F');
+    // Header Design
+    doc.setFillColor(15, 23, 42); // Dark Slate
+    doc.rect(0, 0, 595, 160, 'F');
+    
+    // Decorative accent line
+    doc.setFillColor(99, 102, 241); // Indigo accent
+    doc.rect(0, 157, 595, 3, 'F');
     
     doc.setTextColor(255, 255, 255);
-    doc.setFontSize(32);
+    doc.setFontSize(28);
     doc.setFont('helvetica', 'bold');
-    doc.text("StudySync Analytics", 40, 70);
-    
-    doc.setFontSize(10);
+    doc.text("StudySync", 40, 70);
+    doc.setFontSize(14);
     doc.setFont('helvetica', 'normal');
     doc.setTextColor(148, 163, 184);
-    doc.text(`DATE GENERATED: ${new Date().toLocaleString().toUpperCase()}`, 40, 95);
-    doc.text(`STUDENT PROFILE: ${userName.toUpperCase()}`, 40, 110);
-
-    doc.setTextColor(15, 23, 42);
-    doc.setFontSize(18);
+    doc.text("Personal Productivity Report", 40, 90);
+    
+    doc.setFontSize(9);
     doc.setFont('helvetica', 'bold');
-    doc.text(`Review Period: ${range}`, 40, 185);
+    doc.setTextColor(99, 102, 241);
+    doc.text("STUDENT PROFILE", 40, 125);
+    doc.text("REPORT PERIOD", 240, 125);
+    doc.text("GENERATED ON", 440, 125);
 
-    doc.setFillColor(248, 250, 252); 
-    doc.roundedRect(40, 200, 515, 80, 12, 12, 'F');
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(11);
+    doc.text(userName.toUpperCase(), 40, 140);
+    doc.text(range.toUpperCase(), 240, 140);
+    doc.text(new Date().toLocaleDateString().toUpperCase(), 440, 140);
 
-    doc.setFontSize(10);
-    doc.setTextColor(100, 116, 139);
-    doc.text("TOTAL TIME", 70, 230);
-    doc.text("DAILY AVERAGE", 240, 230);
-    doc.text("SUCCESS RATE", 410, 230);
-
-    doc.setFontSize(22);
-    doc.setTextColor(79, 70, 229); 
-    doc.text(total, 70, 260);
-    doc.text(avg, 240, 260);
-    doc.setTextColor(16, 185, 129); 
-    doc.text(goals, 410, 260);
-
+    // Stats Cards
     doc.setTextColor(15, 23, 42);
     doc.setFontSize(14);
     doc.setFont('helvetica', 'bold');
-    doc.text("Activity Breakdown", 40, 315);
+    doc.text("Performance Overview", 40, 200);
+
+    // Background for stats
+    doc.setFillColor(248, 250, 252); 
+    doc.roundedRect(40, 215, 515, 85, 10, 10, 'F');
+
+    // Stats Labels
+    doc.setFontSize(9);
+    doc.setTextColor(100, 116, 139);
+    doc.text("TOTAL FOCUS TIME", 70, 245);
+    doc.text("AVERAGE SESSION", 240, 245);
+    doc.text("GOALS COMPLETED", 410, 245);
+
+    // Stats Values
+    doc.setFontSize(20);
+    doc.setTextColor(79, 70, 229); // Indigo
+    doc.text(totalStr, 70, 275);
+    doc.text(avgStr, 240, 275);
+    doc.setTextColor(16, 185, 129); // Emerald
+    doc.text(goals, 410, 275);
+
+    // Activity Table
+    doc.setTextColor(15, 23, 42);
+    doc.setFontSize(14);
+    doc.setFont('helvetica', 'bold');
+    doc.text("Daily Activity Logs", 40, 340);
 
     const tableRows = currentLabels.map((label, index) => {
         const hours = currentDataPoints[index];
-        const status = hours >= TARGET_HOURS ? "SUCCESS" : "INCOMPLETE";
-        return [label, `${hours.toFixed(1)} HRS`, status];
+        const status = hours >= TARGET_HOURS ? "GOAL MET" : "INCOMPLETE";
+        return [label, formatTime(hours), status];
     });
 
     doc.autoTable({
-        startY: 330,
-        head: [['SESSION DATE', 'HOURS LOGGED', 'GOAL STATUS']],
+        startY: 355,
+        head: [['DATE', 'TIME LOGGED', 'STATUS']],
         body: tableRows,
-        theme: 'grid',
+        theme: 'striped',
         headStyles: { 
             fillColor: [15, 23, 42], 
             fontSize: 10,
-            halign: 'center',
-            cellPadding: 10
+            halign: 'left',
+            cellPadding: 12
+        },
+        alternateRowStyles: {
+            fillColor: [250, 251, 254]
         },
         columnStyles: {
-            0: { cellWidth: 200, halign: 'left' },
-            1: { halign: 'center', cellWidth: 150 },
-            2: { halign: 'center' }
+            0: { cellWidth: 200 },
+            1: { cellWidth: 150 },
+            2: { halign: 'right', fontStyle: 'bold' }
         },
-        styles: { fontSize: 9, cellPadding: 8, font: 'helvetica' },
+        styles: { 
+            fontSize: 9, 
+            cellPadding: 10, 
+            font: 'helvetica',
+            lineColor: [241, 245, 249],
+            lineWidth: 0.5
+        },
         didDrawCell: (data) => {
             if (data.section === 'body' && data.column.index === 2) {
-                if (data.cell.raw === "SUCCESS") {
+                if (data.cell.raw === "GOAL MET") {
                     doc.setTextColor(16, 185, 129);
                 } else {
                     doc.setTextColor(239, 68, 68);
@@ -313,16 +351,21 @@ async function exportDataToPDF() {
         }
     });
 
+    // Footer
     const pageCount = doc.internal.getNumberOfPages();
     for (let i = 1; i <= pageCount; i++) {
         doc.setPage(i);
         doc.setFontSize(8);
         doc.setTextColor(148, 163, 184);
-        doc.text(`PAGE ${i} OF ${pageCount}`, 500, 810);
-        doc.text("STUDYSYNC PERFORMANCE REPORT - SYSTEM GENERATED", 40, 810);
+        doc.text("STUDYSYNC PERFORMANCE REPORT - CONFIDENTIAL", 40, 810);
+        doc.text(`PAGE ${i} OF ${pageCount}`, 520, 810);
+        
+        // Final signature line
+        doc.setDrawColor(226, 232, 240);
+        doc.line(40, 800, 555, 800);
     }
 
-    doc.save(`StudySync_${userName}_Report.pdf`);
+    doc.save(`StudySync_Report_${userName}_${new Date().toISOString().split('T')[0]}.pdf`);
     showToast("PDF REPORT GENERATED");
 }
 

@@ -301,6 +301,16 @@
             
             <p class="text-slate-500 text-sm mb-2">Select the format for your productivity report:</p>
 
+            <button onclick="generatePDF('date')" class="flex items-center gap-4 bg-slate-50 hover:bg-white p-4 rounded-2xl border border-slate-100 hover:border-violet-200 hover:shadow-md transition-all group text-left">
+                <div class="bg-violet-100 p-3 rounded-xl text-violet-500 group-hover:scale-110 transition-transform">
+                    <i data-lucide="check-square" class="w-6 h-6"></i>
+                </div>
+                <div>
+                    <h4 class="font-bold text-slate-800">Single Day Breakdown</h4>
+                    <p class="text-xs text-slate-500">Detailed list of tasks for the selected date.</p>
+                </div>
+            </button>
+
             <button onclick="generatePDF('list')" class="flex items-center gap-4 bg-slate-50 hover:bg-white p-4 rounded-2xl border border-slate-100 hover:border-purple-200 hover:shadow-md transition-all group text-left">
                 <div class="bg-purple-100 p-3 rounded-xl text-primary group-hover:scale-110 transition-transform">
                     <i data-lucide="list" class="w-6 h-6"></i>

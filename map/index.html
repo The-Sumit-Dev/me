@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Map Master - One UI 7 Pro</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <script src="https://unpkg.com/lucide@latest"></script>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <link rel="stylesheet" href="style.css">
+</head>
+<body class="no-scrollbar">
+
+    <div class="app-container">
+        <aside class="control-panel shadow-oneui flex flex-col">
+            <div class="hidden lg:flex p-10 pb-6 items-center gap-5">
+                <div class="w-16 h-16 bg-indigo-600 rounded-[1.4rem] flex items-center justify-center text-white shadow-xl shadow-indigo-100">
+                    <i data-lucide="map" class="w-8 h-8"></i>
+                </div>
+                <div>
+                    <h1 class="text-3xl font-extrabold tracking-tight">Map Master</h1>
+                    <p class="text-xs font-black text-slate-400 uppercase tracking-widest mt-0.5">National Discovery Pro</p>
+                </div>
+            </div>
+
+            <div class="p-8 lg:p-10 lg:pt-0 flex flex-col gap-8">
+                <div class="tab-bar">
+                    <button onclick="setMode('learn')" id="btnLearn" class="tab-btn active">Learn</button>
+                    <button onclick="setMode('game')" id="btnGame" class="tab-btn">Play</button>
+                </div>
+
+                <div id="panelGame" class="hidden animate-in fade-in slide-in-from-bottom-6 duration-500 space-y-6">
+                    <div class="bg-[#1c1c1e] rounded-oneui p-8 text-white relative shadow-2xl overflow-hidden group">
+                        <div class="absolute -right-8 -top-8 w-40 h-40 bg-indigo-500/10 rounded-full blur-3xl"></div>
+                        <p class="text-indigo-400 text-[10px] font-black uppercase tracking-[0.3em] mb-4">Discovery Goal</p>
+                        <h2 id="targetName" class="text-4xl font-bold tracking-tight">Tap to Start</h2>
+                        <div class="mt-8 flex gap-3">
+                            <button onclick="skipTarget()" class="px-6 py-2.5 bg-white/10 hover:bg-white/20 rounded-full text-xs font-bold transition-all border border-white/5">
+                                Skip Territory
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="bg-white border border-slate-100 p-6 rounded-oneui-sm shadow-sm flex flex-col items-center">
+                            <p class="text-[10px] text-slate-400 font-bold uppercase mb-1">Solved</p>
+                            <span id="scoreVal" class="text-4xl font-black text-emerald-500 leading-none">0</span>
+                        </div>
+                        <div class="bg-white border border-slate-100 p-6 rounded-oneui-sm shadow-sm flex flex-col items-center">
+                            <p class="text-[10px] text-slate-400 font-bold uppercase mb-1">Accuracy</p>
+                            <span id="accuracyVal" class="text-4xl font-black text-indigo-600 leading-none">100</span>
+                        </div>
+                    </div>
+
+                    <div id="feedbackArea" class="py-5 px-8 rounded-full text-center text-sm font-bold border border-slate-100 text-slate-400 italic bg-slate-50">
+                        Target a territory on the map
+                    </div>
+                </div>
+
+                <div id="panelLearn" class="space-y-4 animate-in fade-in slide-in-from-bottom-6 duration-500">
+                    <div class="bg-white border border-slate-100 p-12 rounded-oneui shadow-sm text-center relative">
+                        <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Region Identity</p>
+                        <h2 id="hoverName" class="text-4xl font-black text-slate-900 min-h-[2.8rem] break-words uppercase tracking-tighter">...</h2>
+                        <div class="h-2 w-14 bg-indigo-600 mx-auto mt-8 rounded-full"></div>
+                    </div>
+                    <p class="text-center text-xs text-slate-400 px-8 leading-relaxed">Pinch to zoom into borders. Tap any region to inspect its name and highlight details.</p>
+                </div>
+
+                <div id="panelAction" class="hidden">
+                    <button onclick="startGame()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-5 rounded-full font-black text-lg shadow-xl active:scale-95 transition-all flex items-center justify-center gap-3">
+                        START DISCOVERY <i data-lucide="play" class="w-5 h-5"></i>
+                    </button>
+                </div>
+            </div>
+            
+            <div id="panelError" class="hidden p-10 text-center space-y-4">
+                <i data-lucide="file-x" class="w-16 h-16 text-rose-500 mx-auto"></i>
+                <h3 class="font-bold text-xl text-slate-800 uppercase">Map Missing</h3>
+                <p class="text-sm text-slate-500">Could not find <code>india.svg</code> in your local folder. Please ensure the file is named correctly.</p>
+            </div>
+        </aside>
+
+        <main class="map-viewport bg-[#f2f2f7]" id="mapContainer">
+            <div class="lg:hidden absolute top-10 left-8 flex items-center gap-4 z-20">
+                <div class="w-12 h-12 bg-indigo-600 rounded-[1.1rem] flex items-center justify-center text-white shadow-xl">
+                    <i data-lucide="map" class="w-6 h-6"></i>
+                </div>
+                <h1 class="text-xl font-bold">Map Master</h1>
+            </div>
+
+            <div class="zoom-overlay">
+                <button onclick="adjustZoom(1.5)" class="zoom-pill"><i data-lucide="plus"></i></button>
+                <button onclick="resetZoom()" class="zoom-pill text-indigo-600"><i data-lucide="maximize-2"></i></button>
+                <button onclick="adjustZoom(0.7)" class="zoom-pill"><i data-lucide="minus"></i></button>
+            </div>
+
+            <svg id="indiaSvg" version="1.1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 700">
+                <g id="mapStage">
+                    </g>
+            </svg>
+
+            <div id="victoryModal" class="hidden absolute inset-0 bg-white/60 backdrop-blur-3xl z-[60] flex items-center justify-center p-8">
+                <div class="bg-white max-w-sm w-full p-12 rounded-[3.5rem] shadow-[0_32px_64px_-12px_rgba(0,0,0,0.14)] text-center animate-in zoom-in-95 duration-500 border border-white">
+                    <div class="w-24 h-24 bg-indigo-600 text-white rounded-[2rem] flex items-center justify-center mx-auto mb-10 shadow-2xl shadow-indigo-100">
+                        <i data-lucide="award" class="w-12 h-12"></i>
+                    </div>
+                    <h2 class="text-4xl font-black text-slate-900 mb-3 tracking-tighter uppercase leading-none">Complete!</h2>
+                    <p class="text-slate-500 mb-10 font-medium px-4">You successfully identified every territory of the nation.</p>
+                    
+                    <div class="flex gap-4 mb-10">
+                        <div class="flex-1 bg-[#f2f2f7] p-7 rounded-[2rem]">
+                            <p class="text-[10px] text-slate-400 font-bold uppercase mb-1">Score</p>
+                            <p id="finalScore" class="text-3xl font-black">0</p>
+                        </div>
+                        <div class="flex-1 bg-indigo-600 p-7 rounded-[2rem] text-white">
+                            <p class="text-[10px] text-indigo-200 font-bold uppercase mb-1">Acc.</p>
+                            <p id="finalAcc" class="text-3xl font-black">0%</p>
+                        </div>
+                    </div>
+
+                    <button onclick="startGame()" class="w-full bg-[#1c1c1e] text-white py-6 rounded-full font-black text-lg active:scale-95 transition-all">
+                        TRY AGAIN
+                    </button>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>

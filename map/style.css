@@ -1,0 +1,155 @@
+:root {
+    --oneui-indigo: #4c6ef5;
+    --oneui-indigo-light: #e0e7ff;
+    --oneui-bg: #f2f2f7;
+    --oneui-card: #ffffff;
+    --oneui-text: #000000;
+    --oneui-radius: 2.2rem;
+    --oneui-radius-sm: 1.5rem;
+}
+
+body { 
+    font-family: 'Inter', sans-serif; 
+    background-color: var(--oneui-bg);
+    color: var(--oneui-text);
+    overscroll-behavior: none;
+    overflow: hidden;
+    user-select: none;
+}
+
+/* One UI 7 Design Language */
+.rounded-oneui { border-radius: var(--oneui-radius); }
+.rounded-oneui-sm { border-radius: var(--oneui-radius-sm); }
+.shadow-oneui { box-shadow: 0 12px 48px rgba(0,0,0,0.06); }
+
+.app-container {
+    display: flex;
+    height: 100vh;
+    width: 100vw;
+    flex-direction: column;
+}
+
+@media (min-width: 1024px) {
+    .app-container { flex-direction: row; }
+}
+
+/* Sidebar (Desktop) / Bottom Drawer (Mobile) */
+.control-panel {
+    background: var(--oneui-card);
+    z-index: 50;
+    transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@media (max-width: 1023px) {
+    .control-panel {
+        width: 100%;
+        border-top-left-radius: 2.8rem;
+        border-top-right-radius: 2.8rem;
+        position: fixed;
+        bottom: 0;
+        padding-bottom: env(safe-area-inset-bottom);
+        box-shadow: 0 -12px 40px rgba(0,0,0,0.08);
+    }
+}
+
+@media (min-width: 1024px) {
+    .control-panel {
+        width: 440px;
+        height: calc(100% - 2rem);
+        margin: 1rem;
+        border-radius: var(--oneui-radius);
+        border: 1px solid rgba(0,0,0,0.05);
+    }
+}
+
+/* Interactive Map Area */
+.map-viewport {
+    flex: 1;
+    position: relative;
+    overflow: hidden;
+    cursor: grab;
+    touch-action: none;
+}
+.map-viewport:active { cursor: grabbing; }
+
+#indiaSvg {
+    width: 100%;
+    height: 100%;
+    display: block;
+}
+
+/* SVG Path Theming */
+path {
+    fill: #ffffff;
+    stroke: #94a3b8;        /* Border color between states */
+    stroke-width: 1.4;      /* Thickness of borders */
+    vector-effect: non-scaling-stroke;
+    transition: all 0.2s ease;
+}
+
+path:hover {
+    fill: #3700ff !important;   /* nicer highlight */
+    stroke: #3700ff !important;
+    stroke-width: 2.5;
+    filter: drop-shadow(0 0 4px rgba(76,110,245,0.4));
+}
+
+.state-correct {
+    fill: #34c759 !important;
+    stroke: #1e7a33 !important;
+    stroke-width: 1.5 !important;
+}
+
+.state-wrong {
+    fill: #ff3b30 !important;
+    stroke: #a51f18 !important;
+}
+
+/* Zoom Controls Overlay */
+.zoom-overlay {
+    position: absolute;
+    right: 1.5rem;
+    top: 50%;
+    transform: translateY(-50%);
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    z-index: 30;
+}
+
+.zoom-pill {
+    width: 3.5rem;
+    height: 3.5rem;
+    background: white;
+    border-radius: 1.2rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    transition: transform 0.2s, background 0.2s;
+}
+.zoom-pill:active { transform: scale(0.9); background: #f2f2f7; }
+
+/* Navigation Tabs */
+.tab-bar {
+    background: #efeff4;
+    padding: 0.35rem;
+    border-radius: 100px;
+    display: flex;
+}
+
+.tab-btn {
+    flex: 1;
+    padding: 0.8rem 0;
+    border-radius: 100px;
+    font-weight: 700;
+    font-size: 0.9rem;
+    transition: all 0.3s;
+}
+.tab-btn.active {
+    background: white;
+    color: var(--oneui-indigo);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+}
+
+.no-scrollbar::-webkit-scrollbar { display: none; }

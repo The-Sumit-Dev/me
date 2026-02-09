@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OpticsRay Pro | Nothing OS Edition</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <link href="https://fonts.googleapis.com/css2?family=DotGothic16&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <link rel="stylesheet" href="style.css">
+</head>
+<body class="flex flex-col p-4 md:p-6 gap-6">
+
+    <div id="customCursor"></div>
+
+    <header class="flex items-center justify-between px-8 py-4 widget w-full max-w-7xl mx-auto">
+        <div class="flex items-center gap-4">
+            <div class="w-2 h-2 rounded-full bg-red-600 animate-pulse"></div>
+            <div>
+                <h1 class="nothing-font text-2xl tracking-tighter leading-none">OPTICS.LAB</h1>
+                <p class="text-[9px] font-bold opacity-40 uppercase tracking-[0.2em] mt-1">Ray Tracing Engine v3.2</p>
+            </div>
+        </div>
+        
+        <div class="flex items-center gap-6">
+            <button id="resetBtn" class="nothing-font text-sm hover:underline">RESET()</button>
+            <div class="h-8 w-[1px] bg-black opacity-10"></div>
+            <div class="text-right">
+                <p class="nothing-font text-sm" id="liveTime">00:00:00</p>
+            </div>
+        </div>
+    </header>
+
+    <main class="flex-grow flex flex-col lg:flex-row gap-6 max-w-7xl mx-auto w-full overflow-hidden">
+        
+        <div class="flex-grow flex flex-col gap-6 overflow-hidden">
+            <div id="canvasContainer" class="flex-grow widget relative overflow-hidden bg-white/40">
+                <canvas id="opticsCanvas"></canvas>
+                
+                <div id="diagBox" class="absolute top-6 left-6 w-64 select-none z-50 overflow-hidden" style="min-width: 200px; min-height: 180px;">
+                    <div class="widget bg-white p-5 border-black/10 shadow-xl h-full w-full relative">
+                        <div id="diagHandle" class="drag-handle flex items-center justify-between mb-4 pb-2 border-b border-black/5">
+                            <span class="nothing-font text-xs opacity-40">DATA_STREAM</span>
+                            <span class="text-[10px] font-black">●</span>
+                        </div>
+                        
+                        <div class="space-y-4">
+                            <div class="flex justify-between items-end">
+                                <span class="text-[9px] font-bold opacity-30 uppercase">Dist (u)</span>
+                                <span id="valU" class="nothing-font text-lg">0</span>
+                            </div>
+                            <div class="flex justify-between items-end">
+                                <span class="text-[9px] font-bold opacity-30 uppercase">Dist (v)</span>
+                                <span id="valV" class="nothing-font text-lg">0</span>
+                            </div>
+                            <div class="flex justify-between items-end">
+                                <span class="text-[9px] font-bold opacity-30 uppercase">Magnif.</span>
+                                <span id="valM" class="nothing-font text-lg active-red">1.0x</span>
+                            </div>
+                            <div class="pt-2 border-t border-black/5">
+                                <span id="imageNature" class="text-[10px] font-bold uppercase block tracking-wider">--</span>
+                            </div>
+                        </div>
+
+                        <div id="diagResize" class="resize-handle"></div>
+                    </div>
+                </div>
+
+                <div class="absolute bottom-6 left-1/2 -translate-x-1/2 flex gap-4">
+                    <div class="px-4 py-1.5 rounded-full border border-black/10 bg-white/80 text-[10px] font-bold uppercase tracking-widest flex items-center gap-2">
+                        <span class="w-1.5 h-1.5 bg-red-600 rounded-full"></span> Lens
+                    </div>
+                    <div class="px-4 py-1.5 rounded-full border border-black/10 bg-white/80 text-[10px] font-bold uppercase tracking-widest flex items-center gap-2">
+                        <span class="w-1.5 h-1.5 bg-black rounded-full"></span> Object
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <aside class="w-full lg:w-80 flex flex-col gap-6 overflow-y-auto">
+            
+            <div class="widget p-6 flex flex-col gap-6">
+                <div>
+                    <span class="text-[10px] font-black uppercase tracking-[0.2em] opacity-30 block mb-4">Core Mode</span>
+                    <div class="flex bg-black/5 p-1 rounded-2xl">
+                        <button onclick="setMode('lens')" id="btnLens" class="flex-1 py-3 rounded-xl nothing-font text-sm transition-all">LENS</button>
+                        <button onclick="setMode('mirror')" id="btnMirror" class="flex-1 py-3 rounded-xl nothing-font text-sm transition-all">MIRROR</button>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-2">
+                    <button onclick="setSubMode('converging')" id="btnConv" class="py-4 border-2 rounded-2xl transition-all flex flex-col items-center gap-2">
+                         <div class="w-1 h-8 bg-black rounded-full"></div>
+                         <span class="text-[9px] font-black uppercase">Converging</span>
+                    </button>
+                    <button onclick="setSubMode('diverging')" id="btnDiv" class="py-4 border-2 rounded-2xl transition-all flex flex-col items-center gap-2">
+                         <div class="w-1 h-8 border-l-2 border-r-2 border-black rounded-full"></div>
+                         <span class="text-[9px] font-black uppercase">Diverging</span>
+                    </button>
+                </div>
+            </div>
+
+            <div class="widget p-6 space-y-8">
+                <div>
+                    <div class="flex justify-between items-center mb-4">
+                        <span class="text-[10px] font-black uppercase tracking-[0.2em] opacity-30">Object H.</span>
+                        <span id="sliderValH" class="nothing-font text-lg">70</span>
+                    </div>
+                    <input type="range" id="inputH" min="10" max="150" value="70">
+                </div>
+
+                <div>
+                    <div class="flex justify-between items-center mb-4">
+                        <span class="text-[10px] font-black uppercase tracking-[0.2em] opacity-30">Focal L.</span>
+                        <span id="sliderValF" class="nothing-font text-lg active-red">120</span>
+                    </div>
+                    <input type="range" id="inputF" min="40" max="300" value="120">
+                </div>
+
+                <div>
+                    <div class="flex justify-between items-center mb-4">
+                        <span class="text-[10px] font-black uppercase tracking-[0.2em] opacity-30">Sys. Scale</span>
+                        <span id="sliderValScale" class="nothing-font text-lg">1.0</span>
+                    </div>
+                    <input type="range" id="inputScale" min="0.5" max="2.0" step="0.1" value="1.0">
+                </div>
+            </div>
+
+            <div class="widget p-6">
+                <span class="text-[10px] font-black uppercase tracking-[0.2em] opacity-30 block mb-6">Lens Scenarios</span>
+                <div class="flex flex-wrap gap-2">
+                    <button onclick="applyPreset('beyond-c')" class="preset-chip">Beyond 2F</button>
+                    <button onclick="applyPreset('at-c')" class="preset-chip">At 2F</button>
+                    <button onclick="applyPreset('between-f-c')" class="preset-chip">Between F & 2F</button>
+                    <button onclick="applyPreset('at-f')" class="preset-chip">At Focus</button>
+                    <button onclick="applyPreset('within-f')" class="preset-chip">Magnifier</button>
+                </div>
+            </div>
+
+        </aside>
+    </main>
+
+    <script src="script.js"></script>
+</body>
+</html>

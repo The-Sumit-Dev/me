@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pixel Study Hub | Nothing Edition</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Outfit:wght@100;300;400;600;800&display=swap" rel="stylesheet">
+    
+    <link rel="stylesheet" href="style.css">
+</head>
+<body class="min-h-screen">
+
+    <div id="pdf-export-template">
+        <div style="border-bottom: 2px solid #000; padding-bottom: 20px; margin-bottom: 40px; display: flex; justify-content: space-between; align-items: flex-end;">
+            <div>
+                <p style="font-size: 12px; font-weight: 800; letter-spacing: 4px; color: #666;">STUDENT LOG REPORT</p>
+                <h1 id="pdf-date" style="font-size: 32px; margin: 0; font-weight: 800;"></h1>
+                <p id="pdf-user" style="font-size: 16px; margin-top: 5px;"></p>
+            </div>
+            <div style="text-align: right;">
+                <p style="font-size: 48px; font-weight: 800; margin: 0; color: #ff0000;" id="pdf-count"></p>
+                <p style="font-size: 10px; font-weight: 800;">TOPICS MASTERED</p>
+            </div>
+        </div>
+        <div id="pdf-list-content"></div>
+    </div>
+
+    <main class="max-w-6xl mx-auto p-6 md:p-12 pb-32 fade-in">
+        
+        <header class="flex flex-col md:flex-row md:items-end justify-between gap-8 mb-16">
+            <div class="flex-1">
+                <div class="mb-6">
+                    <h2 class="text-2xl font-bold nothing-font mb-1 flex items-center gap-2">
+                        Hello, <input id="user-name" type="text" class="name-input" value="Scholar">
+                    </h2>
+                    <div class="flex items-center gap-2">
+                        <span id="greeting-text" class="dot-matrix text-[10px] bg-black text-white px-2 py-0.5 rounded">GOOD MORNING</span>
+                        <div class="w-1 h-1 bg-red-600 rounded-full"></div>
+                        <span id="current-day-label" class="dot-matrix text-[10px]">MONDAY</span>
+                    </div>
+                </div>
+                
+                <div id="clock" class="nothing-font">00:00 AM</div>
+                <div id="full-date-label" class="text-slate-400 font-medium text-sm mt-2 uppercase tracking-widest">February 09, 2026</div>
+            </div>
+
+            <div class="flex items-center gap-3">
+                <button onclick="downloadReport()" id="export-btn" class="nothing-btn flex items-center gap-3 h-[72px]">
+                    <i data-lucide="download" class="w-4 h-4"></i>
+                    <span class="text-xs dot-matrix">EXPORT PDF</span>
+                </button>
+            </div>
+        </header>
+
+        <div class="max-w-6xl mx-auto">
+            <div class="flex items-center justify-between mb-12">
+                <div class="flex items-center gap-4">
+                    <button onclick="changeDate(-1)" class="w-12 h-12 border border-black rounded-full flex items-center justify-center hover:bg-black hover:text-white transition-all shadow-sm">
+                        <i data-lucide="arrow-left" class="w-5 h-5"></i>
+                    </button>
+                    <span id="date-context" class="font-bold text-lg px-4 dot-matrix">DATE</span>
+                    <button onclick="changeDate(1)" class="w-12 h-12 border border-black rounded-full flex items-center justify-center hover:bg-black hover:text-white transition-all shadow-sm">
+                        <i data-lucide="arrow-right" class="w-5 h-5"></i>
+                    </button>
+                </div>
+                <div class="flex items-center gap-2 bg-slate-100 p-1.5 rounded-full border border-slate-200">
+                    <button onclick="setLayout('block')" id="toggle-block" class="toggle-btn dot-matrix active">BLOCK</button>
+                    <button onclick="setLayout('line')" id="toggle-line" class="toggle-btn dot-matrix inactive">LINE GRID</button>
+                </div>
+            </div>
+
+            <div id="topics-list" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                </div>
+        </div>
+    </main>
+
+    <div class="shortcut-hint dot-matrix hidden lg:block">Press [N] for new task</div>
+
+    <button onclick="openModal()" class="fab" title="Add Topic (Shortcut: N)">
+        <i data-lucide="plus" class="w-8 h-8"></i>
+    </button>
+
+    <div id="modal" class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-white/80 backdrop-blur-sm hidden">
+        <div class="bg-white w-full max-w-lg border border-black rounded-[40px] p-10 shadow-2xl relative overflow-hidden">
+            
+            <div class="flex gap-4 mb-8 border-b border-slate-100 pb-4">
+                <button onclick="showModalTab('log')" id="tab-btn-log" class="dot-matrix text-[10px] pb-1 border-b-2 border-black">LOG TASK</button>
+                <button onclick="showModalTab('categories')" id="tab-btn-categories" class="dot-matrix text-[10px] pb-1 border-b-2 border-transparent text-slate-400">CATEGORIES</button>
+            </div>
+
+            <div id="modal-tab-log">
+                <div class="flex items-center justify-between mb-8">
+                    <h3 class="dot-matrix text-sm">LOG COMPLETION</h3>
+                    <button onclick="closeModal()" class="w-10 h-10 border border-slate-100 rounded-full flex items-center justify-center transition-colors hover:bg-red-50 hover:text-red-600"><i data-lucide="x" class="w-5 h-5"></i></button>
+                </div>
+                <form id="topic-form" class="space-y-6">
+                    <div>
+                        <label class="block text-[10px] dot-matrix mb-2 opacity-40">SUBJECT TITLE</label>
+                        <input id="in-subject" type="text" placeholder="e.g. Linear Algebra" required class="nothing-input font-bold placeholder:opacity-30">
+                    </div>
+                    <div>
+                        <div class="flex items-center justify-between mb-2">
+                            <label class="block text-[10px] dot-matrix opacity-40">CHOOSE CATEGORY</label>
+                        </div>
+                        <select id="in-category-select" required class="nothing-input font-bold appearance-none cursor-pointer">
+                            </select>
+                    </div>
+                    <button type="submit" class="w-full nothing-btn py-5 uppercase dot-matrix text-xs">Sync with Hub (Enter)</button>
+                </form>
+            </div>
+
+            <div id="modal-tab-categories" class="hidden">
+                <div class="flex items-center justify-between mb-8">
+                    <h3 class="dot-matrix text-sm">MANAGE LABELS</h3>
+                    <button onclick="closeModal()" class="w-10 h-10 border border-slate-100 rounded-full flex items-center justify-center transition-colors hover:bg-red-50 hover:text-red-600"><i data-lucide="x" class="w-5 h-5"></i></button>
+                </div>
+                <div class="space-y-6">
+                    <div>
+                        <label class="block text-[10px] dot-matrix mb-2 opacity-40">CREATE NEW</label>
+                        <div class="flex gap-2">
+                            <input id="new-cat-name" type="text" placeholder="e.g. Revision" class="nothing-input font-bold flex-1 h-12 py-0">
+                            <button onclick="addNewCategory()" class="bg-black text-white px-4 rounded-2xl flex items-center justify-center hover:bg-slate-800 transition-colors">
+                                <i data-lucide="plus" class="w-5 h-5"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="max-h-48 overflow-y-auto pr-2 space-y-2" id="category-manager-list">
+                        </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>

@@ -218,25 +218,55 @@ async function downloadReport() {
     const filtered = studies.filter(s => s.date === selectedDate);
     if (!filtered.length) return;
 
+    // 1. Prepare PDF Data
     document.getElementById('pdf-date').innerText = new Date(selectedDate).toLocaleDateString('en-US', { dateStyle: 'full' }).toUpperCase();
     document.getElementById('pdf-user').innerText = `STUDENT: ${userName.toUpperCase()}`;
     document.getElementById('pdf-count').innerText = filtered.length;
 
-    document.getElementById('pdf-list-content').innerHTML = filtered.map(item => `
-        <div style="border-bottom: 1px solid #000; padding: 25px 0; display: flex; align-items: center;">
+    // 2. Render List with Serial Numbers
+    document.getElementById('pdf-list-content').innerHTML = filtered.map((item, index) => `
+        <div style="border-bottom: 2px solid #000; padding: 25px 0; display: flex; align-items: center; page-break-inside: avoid;">
+            <div style="width: 50px; font-size: 14px; font-weight: 800; color: #000;">${String(index + 1).padStart(2, '0')}.</div>
             <div style="flex: 1;">
-                <p style="font-size: 8px; color: #ff0000; font-weight: 800; letter-spacing: 2px; margin: 0 0 5px 0;">${item.category.toUpperCase()}</p>
-                <p style="font-size: 18px; font-weight: 800; margin: 0;">${item.subject}</p>
+                <p style="font-size: 10px; color: #ff0000; font-weight: 800; letter-spacing: 2px; margin: 0 0 5px 0;">${item.category.toUpperCase()}</p>
+                <p style="font-size: 20px; font-weight: 800; margin: 0; color: #000;">${item.subject}</p>
             </div>
-            <div style="font-size: 9px; font-weight: 800; letter-spacing: 1px; color: #666;">COMPLETED</div>
+            <div style="font-size: 10px; font-weight: 800; letter-spacing: 1px; color: #000;">COMPLETED</div>
         </div>
     `).join('');
 
     const captureElement = document.getElementById('pdf-export-template');
-    const canvas = await html2canvas(captureElement, { scale: 2 });
+    
+    // 3. High Quality Capture (Scale 2 for 1-2MB range and sharp text)
+    const canvas = await html2canvas(captureElement, { 
+        scale: 1, 
+        useCORS: true,
+        logging: false,
+        backgroundColor: '#ffffff'
+    });
+    
+    // PNG provides the best text clarity for black/white designs
+    const imgData = canvas.toDataURL('image/png');
     const pdf = new jsPDF('p', 'mm', 'a4');
-    const pdfWidth = pdf.internal.pageSize.getWidth();
-    const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
-    pdf.addImage(canvas.toDataURL('image/png'), 'PNG', 0, 0, pdfWidth, pdfHeight);
+    
+    const imgWidth = 210; 
+    const pageHeight = 297; // Standard A4 height
+    const imgHeight = (canvas.height * imgWidth) / canvas.width;
+    let heightLeft = imgHeight;
+    let position = 0;
+
+    // 4. Multi-page slicing logic
+    // First page
+    pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+    heightLeft -= pageHeight;
+
+    // Subsequent pages if content is long
+    while (heightLeft > 0) {
+        position = heightLeft - imgHeight;
+        pdf.addPage();
+        pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+        heightLeft -= pageHeight;
+    }
+
     pdf.save(`Study_Report_${selectedDate}.pdf`);
 }

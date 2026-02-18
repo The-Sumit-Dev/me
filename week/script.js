@@ -323,193 +323,187 @@ class ExpenseTracker {
         addToast('Transaction deleted', 'success');
     }
 
-    async generateEnhancedPDF() {
-        const btn = document.getElementById('generateData');
-        const originalText = btn.innerHTML;
-        btn.innerHTML = '<div class="animate-spin h-4 w-4 border-2 border-white/20 border-t-white rounded-full"></div> Generating...';
-        btn.disabled = true;
+   async generateEnhancedPDF() {
+    const btn = document.getElementById('generateData');
+    const originalText = btn.innerHTML;
+    btn.innerHTML = '<div class="animate-spin h-4 w-4 border-2 border-white/20 border-t-white rounded-full"></div> Rendering...';
+    btn.disabled = true;
 
-        try {
-            const { jsPDF } = window.jspdf;
-            const doc = new jsPDF('p', 'pt', 'a4');
-            const pageWidth = doc.internal.pageSize.getWidth();
-            const pageHeight = doc.internal.pageSize.getHeight();
-            const margin = 30; 
-            const contentWidth = pageWidth - (margin * 2);
+    try {
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF('p', 'pt', 'a4');
+        const pageWidth = doc.internal.pageSize.getWidth();
+        const pageHeight = doc.internal.pageSize.getHeight();
+        const margin = 60;
+        const bottomThreshold = pageHeight - 100; // Leave space for footer
 
-            const currentKey = this.getCurrentMonthKey();
-            const monthTxns = this.allTransactions.filter(t => {
-                const d = new Date(t.timestamp);
-                const k = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
-                return k === currentKey;
-            });
-            
-            // --- SORT OLDEST TO NEWEST FOR PDF ---
-            let allSorted = [...this.allTransactions].sort((a, b) => a.timestamp - b.timestamp);
-            let runningBalance = 0;
-            const balanceMap = {};
-            allSorted.forEach(t => {
-                if (t.type === 'income') runningBalance += t.amount;
-                else runningBalance -= t.amount;
-                balanceMap[t.id] = runningBalance;
-            });
+        const colors = {
+            obsidian: [24, 24, 27],
+            emerald: [16, 185, 129],
+            rose: [244, 63, 94],
+            zinc: [113, 113, 122],
+            border: [228, 228, 231],
+            cardBg: [248, 250, 252]
+        };
 
-            // Final sort for display (Oldest First)
-            const pdfRows = monthTxns
-                .map(t => ({...t, runningBalance: balanceMap[t.id]}))
-                .sort((a, b) => a.timestamp - b.timestamp);
+        // --- Data Logic ---
+        const monthTxns = this.getCurrentMonthTransactions().sort((a, b) => a.timestamp - b.timestamp);
+        const totalIn = monthTxns.filter(t => t.type === 'income').reduce((s,t) => s + t.amount, 0);
+        const totalOut = monthTxns.filter(t => t.type === 'expense').reduce((s,t) => s + t.amount, 0);
+        const closingBalance = totalIn - totalOut;
+        const totalMemberPool = monthTxns.filter(t => t.type === 'income' && t.source === 'Member').reduce((sum, t) => sum + t.amount, 0);
+        const carryOver = monthTxns.filter(t => t.type === 'income' && t.source === 'Rest Money').reduce((s,t) => s + t.amount, 0);
 
-            const colors = {
-                headerBg: [17, 24, 39], // Gray 900
-                textMain: [31, 41, 55], // Gray 800
-                textSec: [107, 114, 128], // Gray 500
-                green: [5, 150, 105],   // Green 600
-                red: [220, 38, 38],     // Red 600
-                line: [229, 231, 235],   // Gray 200
-                restMoneyLabel: [79, 70, 229] // Indigo-600
-            };
+        const memberLeaderboard = this.members.map(name => {
+            const amount = monthTxns.filter(t => t.member === name && t.type === 'income' && t.source === 'Member').reduce((sum, t) => sum + t.amount, 0);
+            return { name: name.toUpperCase(), amount: amount, percentage: totalMemberPool > 0 ? (amount / totalMemberPool) : 0 };
+        }).sort((a, b) => b.amount - a.amount);
 
-            // --- HEADER ---
-            doc.setFillColor(...colors.headerBg);
-            doc.rect(0, 0, pageWidth, 70, 'F');
-            
-            doc.setTextColor(255, 255, 255);
-            doc.setFont('helvetica', 'bold');
-            doc.setFontSize(24);
-            doc.text('Group Money Manager', margin, 45);
-            
-            doc.setFontSize(10);
-            doc.setFont('helvetica', 'normal');
-            doc.setTextColor(209, 213, 219);
-            doc.text(`${this.monthNames[this.currentMonth]} ${this.currentYear}`, pageWidth - margin, 42, {align: 'right'});
+        let runningTotal = 0;
+        const historicalSorted = [...this.allTransactions].sort((a, b) => a.timestamp - b.timestamp);
+        const auditMap = {};
+        historicalSorted.forEach(t => { runningTotal += (t.type === 'income' ? t.amount : -t.amount); auditMap[t.id] = runningTotal; });
 
-            let y = 100;
+        // --- PAGE 1: SUMMARY ---
+        doc.setFillColor(...colors.obsidian); doc.rect(margin, 50, 40, 6, 'F');
+        doc.setFontSize(34); doc.setFont('helvetica', 'bold'); doc.setTextColor(...colors.obsidian);
+        doc.text('LEDGER', margin, 100); doc.setFont('helvetica', 'light'); doc.text('REPORT', margin + 155, 100);
+        doc.setFontSize(9); doc.setFont('helvetica', 'bold'); doc.setTextColor(...colors.zinc);
+        doc.text('MONTHLY SUMMARY', margin, 125); doc.text(`${this.monthNames[this.currentMonth].toUpperCase()} ${this.currentYear}`, margin, 140);
+        const yStart = 190;
+        doc.setFontSize(8); doc.text('CURRENT REST MONEY (CLOSING BALANCE)', margin, yStart);
+        doc.setFontSize(32); doc.setTextColor(...colors.obsidian); doc.text(`Rs. ${closingBalance.toLocaleString('en-IN')}`, margin, yStart + 35);
+        doc.setDrawColor(...colors.border); doc.line(margin, yStart + 55, pageWidth - margin, yStart + 55);
+        const colWidth = (pageWidth - (margin * 2)) / 2;
+        doc.setFontSize(8); doc.setTextColor(...colors.zinc); doc.text('TOTAL CONTRIBUTED', margin, yStart + 80);
+        doc.setFontSize(16); doc.setTextColor(...colors.emerald); doc.text(`Rs. ${totalIn.toLocaleString('en-IN')}`, margin, yStart + 100);
+        doc.setFontSize(8); doc.setTextColor(...colors.zinc); doc.text('TOTAL EXPENSES', margin + colWidth, yStart + 80);
+        doc.setFontSize(16); doc.setTextColor(...colors.rose); doc.text(`Rs. ${totalOut.toLocaleString('en-IN')}`, margin + colWidth, yStart + 100);
+        doc.setTextColor(...colors.obsidian); doc.setFontSize(13); doc.setFont('helvetica', 'bold'); doc.text('Member Contributions', margin, 360);
+        let listY = 390;
+        memberLeaderboard.forEach((m) => {
+            doc.setFontSize(9); doc.text(m.name, margin, listY); doc.setTextColor(...colors.zinc); doc.text(`Rs. ${m.amount.toLocaleString('en-IN')}`, pageWidth - margin, listY, {align: 'right'});
+            doc.setFillColor(240, 240, 242); doc.roundedRect(margin, listY + 8, pageWidth - (margin * 2), 4, 2, 2, 'F');
+            if(m.percentage > 0) { doc.setFillColor(...colors.emerald); doc.roundedRect(margin, listY + 8, (pageWidth - (margin * 2)) * m.percentage, 4, 2, 2, 'F'); }
+            listY += 40; doc.setTextColor(...colors.obsidian);
+        });
 
-            // --- SUMMARY ---
-            const totalInc = monthTxns.filter(t => t.type === 'income').reduce((s,t) => s + t.amount, 0);
-            const totalExp = monthTxns.filter(t => t.type === 'expense').reduce((s,t) => s + t.amount, 0);
-            const netChange = totalInc - totalExp;
+        // --- PAGE 2: AUDIT ---
+        doc.addPage();
+        doc.setFontSize(18); doc.setFont('helvetica', 'bold'); doc.text('Transaction Audit', margin, 70);
+        const auditRows = monthTxns.map(t => [t.date, t.member.toUpperCase(), t.description.toUpperCase() || 'GENERAL', { content: t.type === 'income' ? 'CREDIT' : 'DEBIT', styles: { textColor: t.type === 'income' ? colors.emerald : colors.rose, fontStyle: 'bold' } }, { content: `${t.amount.toLocaleString('en-IN')}`, styles: { halign: 'right' } }, { content: `Rs. ${auditMap[t.id].toLocaleString('en-IN')}`, styles: { halign: 'right', fontStyle: 'bold' } }]);
+        doc.autoTable({ startY: 100, head: [['DATE', 'MEMBER', 'DESCRIPTION', 'TYPE', 'AMOUNT', 'REST MONEY']], body: auditRows, theme: 'striped', headStyles: { fillColor: colors.obsidian, fontSize: 8 }, bodyStyles: { fontSize: 8 }, margin: { left: margin, right: margin } });
 
-            doc.setDrawColor(...colors.line);
-            doc.setFillColor(249, 250, 251);
-            doc.roundedRect(margin, y, contentWidth, 50, 4, 4, 'FD');
-            
-            y += 30;
-            doc.setFontSize(12);
-            doc.setFont('helvetica', 'bold');
-            
-            doc.setTextColor(...colors.green);
-            doc.text(`+ ${totalInc.toLocaleString('en-IN')}`, margin + 20, y);
-            doc.setFontSize(8); doc.text('COLLECTED', margin + 20, y + 12);
-            
-            doc.setFontSize(12);
-            doc.setTextColor(...colors.red);
-            doc.text(`- ${totalExp.toLocaleString('en-IN')}`, margin + 160, y);
-            doc.setFontSize(8); doc.text('EXPENSES', margin + 160, y + 12);
-            
-            doc.setFontSize(12);
-            doc.setTextColor(...colors.textMain);
-            doc.text(`${netChange >= 0 ? '+' : ''} ${netChange.toLocaleString('en-IN')}`, margin + 300, y);
-            doc.setFontSize(8); doc.text('NET FLOW', margin + 300, y + 12);
+        // --- PAGE 3+: FINANCIAL RECONCILIATION (WITH PAGE BREAKS) ---
+        doc.addPage();
+        let currentY = 60;
 
-            y += 60;
-
-            // --- TABLE HEADER ---
-            doc.setFontSize(10);
-            doc.setFont('helvetica', 'bold');
-            doc.setTextColor(...colors.textMain);
-            
-            doc.text('Date', margin, y);
-            doc.text('User', margin + 80, y);
-            doc.text('Type', margin + 160, y);  // Adjusted for overlap
-            doc.text('Description', margin + 240, y); // Adjusted for overlap
-            doc.text('Amount', pageWidth - margin, y, {align: 'right'});
-            
-            y += 8;
-            doc.setDrawColor(0,0,0);
-            doc.setLineWidth(1);
-            doc.line(margin, y, pageWidth - margin, y);
-            y += 20;
-
-            // --- ROWS ---
-            if (pdfRows.length === 0) {
-                doc.setFont('helvetica', 'italic');
-                doc.setTextColor(...colors.textSec);
-                doc.text("No transactions recorded.", margin, y);
+        const checkPageBreak = (neededSpace) => {
+            if (currentY + neededSpace > bottomThreshold) {
+                doc.addPage();
+                currentY = 60;
+                return true;
             }
+            return false;
+        };
 
-            pdfRows.forEach((t) => {
-                if (y > pageHeight - 50) { doc.addPage(); y = 40; }
+        // Header
+        doc.setFontSize(24); doc.setFont('helvetica', 'bold'); doc.setTextColor(...colors.obsidian);
+        doc.text('Financial Reconciliation', margin, currentY);
+        currentY += 15;
+        doc.setFontSize(10); doc.setFont('helvetica', 'normal'); doc.setTextColor(...colors.zinc);
+        doc.text('Calculation breakdown of all inflows and outflows for verification.', margin, currentY);
+        currentY += 50;
 
-                const isIncome = t.type === 'income';
-                // Row Height doesn't need variable, handled by Y increment
+        // 1. INCOME SECTION
+        doc.setFontSize(11); doc.setFont('helvetica', 'bold'); doc.setTextColor(...colors.obsidian);
+        doc.text('1. TOTAL INCOME CALCULATION', margin, currentY);
+        currentY += 25;
 
-                // -- MAIN ROW: Date | User | Type | Description | Amount --
-                doc.setFont('helvetica', 'normal');
-                doc.setFontSize(10);
-                
-                // Date
-                doc.setTextColor(...colors.textSec);
-                doc.text(t.date, margin, y);
+        this.members.forEach(m => {
+            const mTotal = monthTxns.filter(t => t.member === m && t.type === 'income' && t.source === 'Member').reduce((s,t)=>s+t.amount,0);
+            checkPageBreak(25);
+            doc.setFontSize(10); doc.setFont('helvetica', 'normal'); doc.setTextColor(...colors.obsidian);
+            doc.text(m.toUpperCase(), margin, currentY);
+            doc.setTextColor(...colors.zinc);
+            doc.text(`+ Rs. ${mTotal.toLocaleString('en-IN')}`, pageWidth - margin, currentY, {align: 'right'});
+            currentY += 20;
+        });
 
-                // User
-                doc.setFont('helvetica', 'bold');
-                doc.setTextColor(...colors.textMain);
-                doc.text(t.member, margin + 80, y);
-                
-                // Type
-                doc.setFont('helvetica', 'bold');
-                doc.setFontSize(8);
-                doc.setTextColor(isIncome ? colors.green[0] : colors.red[0], isIncome ? colors.green[1] : colors.red[1], isIncome ? colors.green[2] : colors.red[2]);
-                doc.text(isIncome ? 'INCOME' : 'EXPENSE', margin + 160, y);
-
-                // Description
-                doc.setFont('helvetica', 'normal');
-                doc.setFontSize(10);
-                doc.setTextColor(...colors.textMain);
-                let desc = t.description;
-                if(desc.length > 30) desc = desc.substring(0, 27) + '...';
-                doc.text(desc, margin + 240, y);
-
-                // Amount (Colored)
-                doc.setFont('helvetica', 'bold');
-                doc.setFontSize(11);
-                doc.setTextColor(isIncome ? colors.green[0] : colors.red[0], isIncome ? colors.green[1] : colors.red[1], isIncome ? colors.green[2] : colors.red[2]);
-                const sign = isIncome ? '+' : '-';
-                doc.text(`${sign} ${t.amount.toLocaleString('en-IN')}`, pageWidth - margin, y, { align: 'right' });
-
-                // -- BALANCE ROW (Next Line, Left Aligned) --
-                doc.setFont('helvetica', 'bold');
-                doc.setFontSize(9);
-                doc.setTextColor(...colors.restMoneyLabel); 
-                // Increased Y offset from +15 to +22 for more breathing room after Date line
-                doc.text("Rest Money: ", margin, y + 22);
-                doc.setTextColor(31, 41, 55); // Gray 800
-                doc.setFont('helvetica', 'bold'); // Make amount bold
-                doc.text("Rs. " + t.runningBalance.toLocaleString('en-IN'), margin + 65, y + 22);
-
-                // Divider
-                // Increased divider offset to accommodate the lower Rest Money line
-                y += 32; 
-                doc.setDrawColor(229, 231, 235);
-                doc.setLineWidth(0.5);
-                doc.line(margin, y, pageWidth - margin, y);
-                
-                // Space before next row
-                y += 20; 
-            });
-
-            doc.save(`Statement_${this.monthNames[this.currentMonth]}_${this.currentYear}.pdf`);
-            addToast('PDF Generated', 'success');
-
-        } catch (err) {
-            console.error(err);
-            addToast('PDF Error', 'error');
-        } finally {
-            btn.innerHTML = originalText;
-            btn.disabled = false;
+        if(carryOver > 0) {
+            checkPageBreak(25);
+            doc.setTextColor(...colors.obsidian); doc.text('CARRYOVER / REST MONEY INJECTED', margin, currentY);
+            doc.setTextColor(...colors.zinc); doc.text(`+ Rs. ${carryOver.toLocaleString('en-IN')}`, pageWidth - margin, currentY, {align: 'right'});
+            currentY += 20;
         }
+        
+        doc.setDrawColor(220, 220, 225); doc.line(margin, currentY, pageWidth - margin, currentY);
+        currentY += 20;
+        doc.setFont('helvetica', 'bold'); doc.setTextColor(...colors.emerald);
+        doc.text('Gross Monthly Income', margin, currentY);
+        doc.text(`Rs. ${totalIn.toLocaleString('en-IN')}`, pageWidth - margin, currentY, {align: 'right'});
+        currentY += 50;
+
+        // 2. EXPENSE SECTION
+        checkPageBreak(40);
+        doc.setFontSize(11); doc.setFont('helvetica', 'bold'); doc.setTextColor(...colors.obsidian);
+        doc.text('2. TOTAL EXPENSE CALCULATION', margin, currentY);
+        currentY += 25;
+
+        const expenses = monthTxns.filter(t => t.type === 'expense');
+        if(expenses.length === 0) {
+            doc.setFontSize(10); doc.setFont('helvetica', 'normal'); doc.setTextColor(...colors.zinc);
+            doc.text('No expenses recorded.', margin, currentY);
+            currentY += 20;
+        } else {
+            expenses.forEach(ex => {
+                checkPageBreak(25);
+                doc.setFontSize(10); doc.setFont('helvetica', 'normal'); doc.setTextColor(...colors.obsidian);
+                doc.text(ex.description.toUpperCase(), margin, currentY);
+                doc.setTextColor(...colors.rose);
+                doc.text(`- Rs. ${ex.amount.toLocaleString('en-IN')}`, pageWidth - margin, currentY, {align: 'right'});
+                currentY += 20;
+            });
+        }
+        
+        doc.setDrawColor(220, 220, 225); doc.line(margin, currentY, pageWidth - margin, currentY);
+        currentY += 20;
+        doc.setFont('helvetica', 'bold'); doc.setTextColor(...colors.rose);
+        doc.text('Total Expenses', margin, currentY);
+        doc.text(`Rs. ${totalOut.toLocaleString('en-IN')}`, pageWidth - margin, currentY, {align: 'right'});
+        currentY += 60;
+
+        // 3. FINAL EQUATION
+        checkPageBreak(120);
+        doc.setFontSize(14); doc.setTextColor(...colors.obsidian); doc.setFont('helvetica', 'bold');
+        doc.text('3. FINAL BALANCE EQUATION', margin, currentY);
+        currentY += 60;
+        doc.setFontSize(32); doc.setTextColor(...colors.obsidian); doc.text(`${totalIn.toLocaleString('en-IN')}`, margin, currentY);
+        doc.setFontSize(24); doc.text('-', margin + 110, currentY - 2);
+        doc.setFontSize(32); doc.text(`${totalOut.toLocaleString('en-IN')}`, margin + 150, currentY);
+        doc.setFontSize(24); doc.text('=', margin + 280, currentY - 2);
+        doc.setFontSize(48); doc.setTextColor(...colors.emerald); doc.text(`${closingBalance.toLocaleString('en-IN')}`, margin + 330, currentY);
+        currentY += 20;
+        doc.setFontSize(10); doc.setTextColor(...colors.zinc); doc.setFont('helvetica', 'bold');
+        doc.text('INCOME', margin, currentY); doc.text('EXPENSES', margin + 150, currentY); doc.text('REST MONEY', margin + 330, currentY);
+
+        // Footers
+        const totalPages = doc.internal.getNumberOfPages();
+        for (let i = 1; i <= totalPages; i++) {
+            doc.setPage(i);
+            doc.setFontSize(7); doc.setTextColor(...colors.zinc);
+            doc.text(`Page ${i} of ${totalPages} • Group Money Manager Statement`, pageWidth / 2, pageHeight - 30, { align: 'center' });
+        }
+
+        doc.save(`Statement_${this.monthNames[this.currentMonth]}_${this.currentYear}.pdf`);
+        addToast('Multi-page statement generated successfully');
+
+    } catch (err) {
+        console.error(err); addToast('Export Failed', 'error');
+    } finally {
+        btn.innerHTML = originalText; btn.disabled = false;
     }
+}
 }
 
 function switchTab(tab) {

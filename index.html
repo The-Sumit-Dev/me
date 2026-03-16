@@ -74,19 +74,63 @@
         }
     </script>
     <style>
+        :root {
+            --mouse-x: -500px;
+            --mouse-y: -500px;
+        }
+
         body {
-            background-color: #050505;
+            background-color: #000000;
             color: #ffffff;
             overflow-x: hidden;
         }
 
-        /* Subtle background grid */
-        .bg-grid {
-            background-size: 50px 50px;
-            background-image: linear-gradient(to right, rgba(255, 255, 255, 0.02) 1px, transparent 1px),
-                              linear-gradient(to bottom, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
-            mask-image: radial-gradient(circle at center, black 40%, transparent 100%);
-            -webkit-mask-image: radial-gradient(circle at center, black 40%, transparent 100%);
+        /* Interactive Grid Styles */
+        #grid-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: 0;
+            pointer-events: none;
+            background-color: #000;
+        }
+
+        .grid-layer {
+            position: absolute;
+            inset: 0;
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(30px, 1fr));
+            grid-template-rows: repeat(auto-fill, minmax(30px, 1fr));
+        }
+
+        .grid-base .grid-box {
+            border: 0.5px solid rgba(255, 255, 255, 0.03);
+        }
+
+        .grid-highlight {
+            mask-image: radial-gradient(
+                250px circle at var(--mouse-x) var(--mouse-y),
+                black 20%,
+                transparent 100%
+            );
+            -webkit-mask-image: radial-gradient(
+                250px circle at var(--mouse-x) var(--mouse-y),
+                black 20%,
+                transparent 100%
+            );
+        }
+
+        .grid-highlight .grid-box {
+            border: 0.5px solid rgba(255, 255, 255, 0.2);
+            background-color: rgba(255, 255, 255, 0.02);
+        }
+
+        .grid-box {
+            width: 100%;
+            height: 100%;
+            box-sizing: border-box;
         }
 
         .gradient-text {
@@ -112,7 +156,7 @@
         ::-webkit-scrollbar-thumb:hover { background: #555; }
 
         .glass-nav {
-            background: rgba(5, 5, 5, 0.7);
+            background: rgba(0, 0, 0, 0.7);
             backdrop-filter: blur(12px);
             -webkit-backdrop-filter: blur(12px);
         }
@@ -120,10 +164,10 @@
 </head>
 <body class="relative">
 
-    <div class="fixed inset-0 z-0 pointer-events-none">
-        <div class="absolute inset-0 bg-grid"></div>
-        <div class="absolute top-0 right-0 w-[500px] h-[500px] bg-blue-500/10 rounded-full blur-[120px] mix-blend-screen opacity-30"></div>
-        <div class="absolute bottom-0 left-0 w-[500px] h-[500px] bg-purple-500/10 rounded-full blur-[120px] mix-blend-screen opacity-30"></div>
+    <!-- Updated Interactive Grid Background -->
+    <div id="grid-container">
+        <div class="grid-layer grid-base" id="base-layer"></div>
+        <div class="grid-layer grid-highlight" id="highlight-layer"></div>
     </div>
 
     <nav class="fixed top-0 w-full z-50 glass-nav border-b border-stroke transition-all duration-300">
@@ -507,7 +551,7 @@
 
     </main>
 
-    <footer id="contact" class="bg-black py-12 border-t border-stroke">
+    <footer id="contact" class="bg-black py-12 border-t border-stroke relative z-10">
         <div class="max-w-7xl mx-auto px-6 flex flex-col md:flex-row justify-between items-center gap-6 text-sm text-gray-500">
             <p>© 2026 Sumit Kumar. All rights reserved.</p>
             <div class="flex items-center gap-8 font-medium">
@@ -519,6 +563,8 @@
     </footer>
 
     <script>
+        // --- YOUR ORIGINAL FUNCTIONS (NOT MODIFIED) ---
+        
         // Typewriter Effect
         const nameElement = document.getElementById('typewriter-name');
         const nameText = "Sumit Kumar.";
@@ -543,6 +589,7 @@
         // Init
         window.addEventListener('DOMContentLoaded', () => {
             setTimeout(type, 500);
+            createGrid(); // Initialize the new background
         });
 
         // Intersection Observer for Animations
@@ -559,6 +606,43 @@
         document.querySelectorAll('section').forEach(section => {
             section.classList.add('transition-all', 'duration-1000', 'ease-out');
             observer.observe(section);
+        });
+
+        // --- NEW INTERACTIVE BACKGROUND LOGIC ---
+
+        const baseLayer = document.getElementById('base-layer');
+        const highlightLayer = document.getElementById('highlight-layer');
+        const boxSize = 30; 
+        
+        function createGrid() {
+            baseLayer.innerHTML = '';
+            highlightLayer.innerHTML = '';
+            const columns = Math.ceil(window.innerWidth / boxSize);
+            const rows = Math.ceil(window.innerHeight / boxSize);
+            const totalBoxes = columns * rows;
+
+            const fragmentBase = document.createDocumentFragment();
+            const fragmentHighlight = document.createDocumentFragment();
+
+            for (let i = 0; i < totalBoxes; i++) {
+                const boxBase = document.createElement('div');
+                boxBase.className = 'grid-box';
+                fragmentBase.appendChild(boxBase);
+
+                const boxHighlight = document.createElement('div');
+                boxHighlight.className = 'grid-box';
+                fragmentHighlight.appendChild(boxHighlight);
+            }
+            
+            baseLayer.appendChild(fragmentBase);
+            highlightLayer.appendChild(fragmentHighlight);
+        }
+
+        window.addEventListener('resize', createGrid);
+
+        window.addEventListener('mousemove', (e) => {
+            document.documentElement.style.setProperty('--mouse-x', `${e.clientX}px`);
+            document.documentElement.style.setProperty('--mouse-y', `${e.clientY}px`);
         });
     </script>
 </body>
